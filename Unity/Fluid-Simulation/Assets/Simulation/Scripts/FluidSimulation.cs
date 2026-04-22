@@ -10,6 +10,9 @@ namespace Simulation.Scripts
         
         // Simulation settings
         [SerializeField] private int nParticles = 5;
+        [SerializeField] private float floorY = -1.0f;
+        [SerializeField] private float damping = 1.0f;
+        [SerializeField] private float radius = 0.5f;
 
         // Array to hold particle data
         public Particle[] Particles;
@@ -33,6 +36,15 @@ namespace Simulation.Scripts
                 
                 // Update position
                 particle.Position += particle.Velocity * Time.deltaTime;
+
+                // Bounce: invert vertical velocity and add a damping force
+                if (particle.Position.y <= floorY + radius){
+                    particle.Velocity.y *= -1;
+                    particle.Velocity.y *= damping;
+                }
+
+                // Update particle visuals
+                particle.GameObject.transform.localScale = Vector3.one * radius;
                 particle.GameObject.transform.position = particle.Position;
                 // Write back to the array of particles
                 Particles[i] = particle;
