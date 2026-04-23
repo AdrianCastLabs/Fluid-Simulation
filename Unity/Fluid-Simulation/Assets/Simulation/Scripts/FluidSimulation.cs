@@ -23,7 +23,7 @@ namespace Simulation.Scripts
             Particles = new Particle[nParticles];
             for (int i = 0; i < nParticles; i++)
             {
-                Particles[i] = CreateParticle();;
+                Particles[i] = CreateParticle();
             }
         }
 
@@ -38,7 +38,9 @@ namespace Simulation.Scripts
                 particle.Position += particle.Velocity * Time.deltaTime;
 
                 // Bounce: invert vertical velocity and add a damping force
-                if (particle.Position.y <= floorY + radius){
+                if (particle.Position.y <= floorY + radius)
+                {
+                    particle.Position.y = floorY + radius;
                     particle.Velocity.y *= -1;
                     particle.Velocity.y *= damping;
                 }
@@ -57,7 +59,7 @@ namespace Simulation.Scripts
             Particle particle = new Particle
             {
                 GameObject = Instantiate(particlePrefab, Vector3.zero, Quaternion.identity),
-                Position = new Vector3(Random.Range(0, 5), Random.Range(0, 5), Random.Range(0, 0)),
+                Position = new Vector3(Random.Range(0.0f, 5.0f), Random.Range(0.0f, 5.0f), Random.Range(0, 0)),
                 Velocity = Vector3.zero
             };
             return particle;

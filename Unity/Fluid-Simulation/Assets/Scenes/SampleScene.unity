@@ -476,9 +476,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Simulation.Scripts.FluidSimulation
   particlePrefab: {fileID: 740200351}
-  nParticles: 37
+  nParticles: 5
   floorY: -1
-  damping: 1
+  damping: 0.8
   radius: 0.5
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
