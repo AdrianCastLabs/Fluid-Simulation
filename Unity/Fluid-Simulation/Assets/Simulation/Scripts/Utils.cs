@@ -7,13 +7,13 @@ namespace Simulation.Scripts
     {
         public GameObject particlePrefab;
 
-        public void DrawGraph(int nParticles, float radius, float y)
+        public void DrawGraph(int nParticles, float radius, float[] values)
         {
             // Create Particles
-            Particle[] particles = CreateParticles(5, 1);
+            Particle[] particles = CreateParticles(nParticles, 1);
             for (int i = 0; i < nParticles; i++)
             {
-                particles[i].Position = new Vector3(i, y * i, 0);
+                particles[i].Position = new Vector3(i, values[i], 0);
                 UpdateParticles(particles, radius);
             }
         }
@@ -54,9 +54,13 @@ namespace Simulation.Scripts
         
         public float SmoothingKernel(float radius, float distance)
         {
-            float value = Math.Max(0, radius - distance);
-            return value * value * value;
+            if (distance >= radius) return 0;
+
+            float volume = (float)Math.PI * (float)Math.Pow(radius, 4) / 6;
+            return (radius - distance) * (radius - distance) / volume;
         }
+
+        
     
     }
 }
