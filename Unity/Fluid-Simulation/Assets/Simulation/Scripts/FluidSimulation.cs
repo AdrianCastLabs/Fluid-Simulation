@@ -22,6 +22,7 @@ namespace Simulation.Scripts
 
         [SerializeField] private Vector3 point = new Vector3(0, 0, 0);
         [SerializeField] private float targetDensity = 0.0f;
+        [SerializeField] private float stiffness = 10.0f;
         
         private Particle[] particles;
         
@@ -53,6 +54,9 @@ namespace Simulation.Scripts
                 }
                 
                 particle.Velocity += force * Time.deltaTime;
+                particle.Velocity.y -= 10 * Time.deltaTime;
+                particle.Velocity *= 0.95f;
+                
                 particle.Position += particle.Velocity * Time.deltaTime;
 
                 particle.Position.x = Mathf.Clamp(particle.Position.x, 0, simulationSize.x);
@@ -83,7 +87,7 @@ namespace Simulation.Scripts
 
         private float ComputePressure(float currentDensity, float targetDensity)
         {
-            return currentDensity - targetDensity;
+            return stiffness * (currentDensity - targetDensity);
         }
         
         private Particle[] SpawnRandomParticles()
