@@ -250,7 +250,7 @@ Transform:
   m_GameObject: {fileID: 519420028}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -10}
+  m_LocalPosition: {x: 2.71, y: 2.46, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -334,7 +334,7 @@ Transform:
   m_GameObject: {fileID: 619394800}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: -25.87, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -441,6 +441,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1721007415}
   - component: {fileID: 1721007416}
+  - component: {fileID: 1721007417}
   m_Layer: 0
   m_Name: SimulationManager
   m_TagString: Untagged
@@ -475,11 +476,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 351a94c89a5399d47b0b564119321e35, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Simulation.Scripts.FluidSimulation
+  utils: {fileID: 1721007417}
   particlePrefab: {fileID: 740200351}
-  nParticles: 5
-  floorY: -1
-  damping: 0.8
-  radius: 0.5
+  simulationSize: {x: 5, y: 5}
+  nParticles: 100
+  radius: 0.1
+--- !u!114 &1721007417
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1721007414}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6dda3a45d7573514c9a4b42f381c9fa9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Simulation.Scripts.Utils
+  particlePrefab: {fileID: 740200351}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
