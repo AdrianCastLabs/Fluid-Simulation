@@ -8,65 +8,62 @@ namespace Simulation.Scripts
 {
     public class FluidSimulation : MonoBehaviour
     {
+        // Utility functions
         public Utils utils;
-        
-        // Particle object
-        public GameObject particlePrefab;
-        
         // Simulation settings
         [SerializeField] private Vector2 simulationSize = new Vector2(10.0f, 10.0f);
         [SerializeField] private int nParticles = 5;
         [SerializeField] private float radius = 0.5f;
-        [SerializeField] private float smoothingRadius = 1.0f;
+        // fluid settings
+        [SerializeField] private float targetDensity = 1.0f;
         [SerializeField] private float pressureMultiplier = 1.0f;
-
-        [SerializeField] private Vector3 point = new Vector3(0, 0, 0);
-        [SerializeField] private float targetDensity = 0.0f;
-        [SerializeField] private float stiffness = 10.0f;
+        [SerializeField] private float smoothingRadius = 1.0f;
+        [SerializeField] private float mass = 1.0f;
+        [SerializeField] private float gravity = 1.0f;
         
         private Particle[] particles;
         
-        public void Start()
+        private void Start()
         {
             particles = SpawnRandomParticles();
-
-            
         }
 
         private void Update()
         {
+            // compute densities
             for (int i = 0; i < nParticles; i++)
             {
-                Particle particle = particles[i];
-                particle.Density = ComputeDensity(particle.Position);
-                particle.Pressure = ComputePressure(particle.Density, targetDensity);
-                Vector3 force = Vector3.zero;
-                for (int j = 0; j < nParticles; j++)
+                particles[i].Density = ComputeDensity(particles[i].Position);
+            }
+            
+            // calculate pressure
+            for (int i = 0; i < nParticles; i++)
+            {
+                Vector3 pressureForce = CalculatePressureForce(particles[i].Position);
+                Vector3 pressureAcceleration = pressureForce / particles[i].Density;
+                particles[i].Velocity += pressureAcceleration * Time.deltaTime;
+            }
+            
+            // update positions
+            for (int i = 0; i < nParticles; i++)
+            {
+                particles[i].Position += particles[i].Velocity * Time.deltaTime;
+
+                float damping = 0.5f;
+                if (particles[i].Position.x <= 0.0f || particles[i].Position.x >= simulationSize.x)
                 {
-                    if (i == j) continue;
-                    Particle otherParticle = particles[j];
-                    Vector3 direction = (otherParticle.Position - particle.Position);
-                    float distance = direction.magnitude;
-                    direction /= distance + 0.001f;
-                    float strength = (particle.Pressure + otherParticle.Pressure);
-                    float fallof = utils.SmoothingKernelDerivative(smoothingRadius, distance);
-                    force += direction * strength * fallof;
+                    particles[i].Velocity.x *= -damping;
+                    particles[i].Position.x = Mathf.Clamp(particles[i].Position.x, 0.0f, simulationSize.x);
                 }
-                
-                particle.Velocity += force * Time.deltaTime;
-                particle.Velocity.y -= 10 * Time.deltaTime;
-                particle.Velocity *= 0.95f;
-                
-                particle.Position += particle.Velocity * Time.deltaTime;
+                if (particles[i].Position.y <= 0.0f || particles[i].Position.y >= simulationSize.y)
+                {
+                    particles[i].Velocity.y *= -damping;
+                    particles[i].Position.y = Mathf.Clamp(particles[i].Position.y, 0.0f, simulationSize.y);
+                }
 
-                particle.Position.x = Mathf.Clamp(particle.Position.x, 0, simulationSize.x);
-                particle.Position.y = Mathf.Clamp(particle.Position.y, 0, simulationSize.y);
-                particle.Position.z = Mathf.Clamp(particle.Position.z, 0, simulationSize.y);
+                particles[i].GameObject.transform.position = particles[i].Position;
+                utils.SetPressureColor(particles[i], ConvertDensityToPressure(particles[i].Density));
 
-                particle.GameObject.transform.position = particle.Position;
-
-                particles[i] = particle;
-                utils.SetPressureColor(particle, particle.Pressure);
             }
         }
 
@@ -85,9 +82,35 @@ namespace Simulation.Scripts
             return density;
         }
 
-        private float ComputePressure(float currentDensity, float targetDensity)
+        private Vector3 CalculatePressureForce(Vector3 samplePoint)
         {
-            return stiffness * (currentDensity - targetDensity);
+            Vector3 pressureForce = Vector3.zero;
+
+            for (int i = 0; i < nParticles; i++)
+            {
+                float distance = (particles[i].Position - samplePoint).magnitude;
+                Vector3 direction = (particles[i].Position - samplePoint) / (distance + 0.1f);
+                float slope = utils.SmoothingKernelDerivative(smoothingRadius, distance);
+                float density = particles[i].Density;
+                float sharedPressure = CalculateSharedPressure(density, particles[i].Density);
+                pressureForce += -sharedPressure * direction * slope * mass / density;
+            }
+
+            return pressureForce;
+        }
+
+        private float CalculateSharedPressure(float densityA, float densityB)
+        {
+            float pressureA = ConvertDensityToPressure(densityA);
+            float pressureB = ConvertDensityToPressure(densityB);
+            return (pressureA + pressureB) / 2;
+        }
+
+        private float ConvertDensityToPressure(float density)
+        {
+            float pressure = density - targetDensity;
+            pressure *= pressureMultiplier;
+            return pressure;
         }
         
         private Particle[] SpawnRandomParticles()

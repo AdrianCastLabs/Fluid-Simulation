@@ -7,17 +7,6 @@ namespace Simulation.Scripts
     {
         public GameObject particlePrefab;
 
-        public void DrawGraph(int nParticles, float radius, float[] values)
-        {
-            // Create Particles
-            Particle[] particles = CreateParticles(nParticles, 1);
-            for (int i = 0; i < nParticles; i++)
-            {
-                particles[i].Position = new Vector3(i, values[i], 0);
-                UpdateParticles(particles, radius);
-            }
-        }
-
         public Particle[] CreateParticles(int nParticles, float radius)
         {
             // Create Particles
@@ -56,16 +45,16 @@ namespace Simulation.Scripts
         {
             if (distance >= radius) return 0;
 
-            float volume = (float)Math.PI * (float)Math.Pow(radius, 4) / 6;
+            float volume = ((float)Math.PI * (float)Math.Pow(radius, 4)) / 6;
             return (radius - distance) * (radius - distance) / volume;
         }
 
         public float SmoothingKernelDerivative(float radius, float distance)
         {
             if (distance >= radius) return 0;
-            float f = radius * radius - distance * distance;
-            float scale = -24 / ((float)Math.PI * (float)Math.Pow(radius, 8));
-            return scale * distance * f * f;
+
+            float scale = -12 / ((float)Math.Pow(radius, 4) * (float)Math.PI);
+            return (distance - radius) * scale;
         }
 
         public void SetPressureColor(Particle particle, float pressure)

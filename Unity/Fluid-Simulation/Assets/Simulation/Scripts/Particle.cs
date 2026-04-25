@@ -8,6 +8,5 @@ namespace Simulation.Scripts
         public Vector3 Position;
         public Vector3 Velocity;
         public float Density;
-        public float Pressure;
     }
 }
