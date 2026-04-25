@@ -19,6 +19,7 @@ namespace Simulation.Scripts
         [SerializeField] private float pressureMultiplier = 1.0f;
         [SerializeField] private float smoothingRadius = 1.0f;
         [SerializeField] private float mass = 1.0f;
+        [SerializeField] private float timeStep = 0.02f;
         
         private Particle[] particles;
         
@@ -39,14 +40,16 @@ namespace Simulation.Scripts
             for (int i = 0; i < nParticles; i++)
             {
                 Vector3 pressureForce = CalculatePressureForce(i);
-                Vector3 pressureAcceleration = pressureForce / particles[i].Density;
-                particles[i].Velocity += pressureAcceleration * Time.deltaTime;
+                float density = Mathf.Max(particles[i].Density, 0.0001f);
+                Vector3 pressureAcceleration = pressureForce / density;
+                particles[i].Velocity += pressureAcceleration * timeStep;
             }
             
             // update positions
             for (int i = 0; i < nParticles; i++)
             {
-                particles[i].Position += particles[i].Velocity * Time.deltaTime;
+                particles[i].Velocity *= 0.99f;
+                particles[i].Position += particles[i].Velocity * timeStep;
 
                 float damping = 0.5f;
                 if (particles[i].Position.x <= 0.0f || particles[i].Position.x >= simulationSize.x)
@@ -122,9 +125,8 @@ namespace Simulation.Scripts
             for (int i = 0; i < nParticles; i++)
             {
                 particles[i].Position = new Vector3(Random.Range(0, simulationSize.x), Random.Range(0, simulationSize.y), 0);
-                utils.UpdateParticles(particles, radius);
             }
-
+            utils.UpdateParticles(particles, radius);
             return particles;
         }
     }
