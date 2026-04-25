@@ -60,8 +60,22 @@ namespace Simulation.Scripts
             return (radius - distance) * (radius - distance) / volume;
         }
 
-        
-    
+        public float SmoothingKernelDerivative(float distance, float radius)
+        {
+            if (distance >= radius) return 0;
+            float f = radius * radius - distance * distance;
+            float scale = -24 / ((float)Math.PI * (float)Math.Pow(radius, 8));
+            return scale * distance * f * f;
+        }
+
+        public void SetPressureColor(Particle particle, float pressure)
+        {
+            float t = Mathf.InverseLerp(0f, 50f, pressure); // min, max, value
+            float hue = 1f - t;
+            
+            Renderer renderer = particle.GameObject.GetComponent<Renderer>();
+            renderer.material.color = Color.HSVToRGB(hue / 1.2f, 1f, 1f);
+        }
     }
 }
 

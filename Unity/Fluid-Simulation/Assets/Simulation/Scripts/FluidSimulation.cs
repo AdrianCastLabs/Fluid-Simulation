@@ -21,53 +21,29 @@ namespace Simulation.Scripts
         [SerializeField] private float pressureMultiplier = 1.0f;
 
         [SerializeField] private Vector3 point = new Vector3(0, 0, 0);
-
+        [SerializeField] private float targetDensity = 1.0f;
+        
         private Particle[] particles;
         
         public void Start()
         {
             particles = SpawnRandomParticles();
-        }
 
-        public void Update()
-        {
-            float density = CalculateDensity(point, particles);
-            Debug.Log(density);
-
-            for (int i = 0; i < nParticles; i++)
+            foreach (Particle particle in particles)
             {
-                Particle particle = particles[i];
+                float density = ComputeDensity(particle.Position);
+                float pressure = ComputePressure(density, targetDensity);
                 
-                for (int j = 0; j < nParticles; j++)
-                {
-                    if (i == j) continue;
-                    Particle otherParticle = particles[j];
-                    Vector3 direction = (otherParticle.Position - particle.Position);
-                    float distanceSquared = math.dot(direction, direction);
-                    distanceSquared += 0.5f * 0.5f;
-                    float distance = math.sqrt(distanceSquared);
-                    float forceMagnitude = utils.SmoothingKernel(smoothingRadius, distance) * pressureMultiplier * CalculateDensity(otherParticle.Position, particles);
-                    direction /= distance;
-                    particle.Velocity += -direction * forceMagnitude * Time.deltaTime;
-                }
-
-                particle.Velocity.y -= 2 * Time.deltaTime; // simple gravity
-                particle.Position += particle.Velocity * Time.deltaTime;
-                particle.Position.x =  Math.Clamp(particle.Position.x, 0, simulationSize.x);
-                particle.Position.y = Math.Clamp(particle.Position.y, 0, simulationSize.y);
-                particle.Position.z = Math.Clamp(particle.Position.z, 0, simulationSize.y);
-                particle.GameObject.transform.position = particle.Position;
-                
-                particles[i] = particle;
+                utils.SetPressureColor(particle, pressure);
             }
         }
 
-        public float CalculateDensity(Vector3 samplePoint, Particle[] particles)
+        private float ComputeDensity(Vector3 samplePoint)
         {
             float density = 0;
             const float mass = 1;
 
-            for (int i = 0; i < particles.Length; i++)
+            for (int i = 0; i < nParticles; i++)
             {
                 float distance = (particles[i].Position - samplePoint).magnitude;
                 float influence = utils.SmoothingKernel(smoothingRadius, distance);
@@ -77,15 +53,9 @@ namespace Simulation.Scripts
             return density;
         }
 
-        private void DrawSmoothingKernel()
+        private float ComputePressure(float currentDensity, float targetDensity)
         {
-            float[] values = new float[nParticles];;
-            for (int i = 0; i < nParticles; i++)
-            {
-                float distance = i / (float)nParticles * smoothingRadius;
-                values[i] = utils.SmoothingKernel(smoothingRadius, distance) * pressureMultiplier;
-            }
-            utils.DrawGraph(nParticles, radius, values);
+            return currentDensity - targetDensity;
         }
 
         private Particle[] SpawnRandomParticles()
