@@ -60,7 +60,7 @@ namespace Simulation.Scripts
             return (radius - distance) * (radius - distance) / volume;
         }
 
-        public float SmoothingKernelDerivative(float distance, float radius)
+        public float SmoothingKernelDerivative(float radius, float distance)
         {
             if (distance >= radius) return 0;
             float f = radius * radius - distance * distance;
