@@ -7,10 +7,15 @@ namespace Simulation.Scripts
     {
         public GameObject particlePrefab;
 
-        public void DrawGraph(int nParticles, float radius)
+        public void DrawGraph(int nParticles, float radius, float y)
         {
             // Create Particles
             Particle[] particles = CreateParticles(5, 1);
+            for (int i = 0; i < nParticles; i++)
+            {
+                particles[i].Position = new Vector3(i, y * i, 0);
+                UpdateParticles(particles, radius);
+            }
         }
 
         public Particle[] CreateParticles(int nParticles, float radius)
@@ -22,11 +27,18 @@ namespace Simulation.Scripts
             {
                 Particles[i] = CreateParticle();
                 Particles[i].Position = new Vector3(0, 0, 0);
-                Particles[i].GameObject.transform.position = Particles[i].Position;
-                Particles[i].GameObject.transform.localScale = Vector3.one * radius;
             }
 
             return Particles;
+        }
+
+        public void UpdateParticles(Particle[] particles, float radius)
+        {
+            for (int i = 0; i < particles.Length; i++)
+            {
+                particles[i].GameObject.transform.position = particles[i].Position;
+                particles[i].GameObject.transform.localScale = Vector3.one * radius;
+            }
         }
         
         public Particle CreateParticle()

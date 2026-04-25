@@ -480,7 +480,7 @@ MonoBehaviour:
   particlePrefab: {fileID: 740200351}
   simulationSize: {x: 5, y: 5}
   nParticles: 100
-  radius: 0.1
+  radius: 1
 --- !u!114 &1721007417
 MonoBehaviour:
   m_ObjectHideFlags: 0

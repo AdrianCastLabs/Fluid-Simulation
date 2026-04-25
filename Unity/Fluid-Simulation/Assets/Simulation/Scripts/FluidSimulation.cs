@@ -24,7 +24,8 @@ namespace Simulation.Scripts
             Particle[] particles =  utils.CreateParticles(nParticles, radius);
             for (int i = 0; i < nParticles; i++)
             {
-                particles[i].GameObject.transform.position = new Vector3(Random.Range(0, simulationSize.x), Random.Range(0, simulationSize.y), 0);
+                particles[i].Position = new Vector3(Random.Range(0, simulationSize.x), Random.Range(0, simulationSize.y), 0);
+                utils.UpdateParticles(particles, radius);
             }
         }
         
