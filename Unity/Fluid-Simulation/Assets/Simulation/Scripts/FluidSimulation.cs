@@ -1,4 +1,5 @@
 using System;
+using Unity.Mathematics;
 using Unity.VisualScripting;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -32,6 +33,33 @@ namespace Simulation.Scripts
         {
             float density = CalculateDensity(point, particles);
             Debug.Log(density);
+
+            for (int i = 0; i < nParticles; i++)
+            {
+                Particle particle = particles[i];
+                
+                for (int j = 0; j < nParticles; j++)
+                {
+                    if (i == j) continue;
+                    Particle otherParticle = particles[j];
+                    Vector3 direction = (otherParticle.Position - particle.Position);
+                    float distanceSquared = math.dot(direction, direction);
+                    distanceSquared += 0.5f * 0.5f;
+                    float distance = math.sqrt(distanceSquared);
+                    float forceMagnitude = utils.SmoothingKernel(smoothingRadius, distance) * pressureMultiplier * CalculateDensity(otherParticle.Position, particles);
+                    direction /= distance;
+                    particle.Velocity += -direction * forceMagnitude * Time.deltaTime;
+                }
+
+                particle.Velocity.y -= 2 * Time.deltaTime; // simple gravity
+                particle.Position += particle.Velocity * Time.deltaTime;
+                particle.Position.x =  Math.Clamp(particle.Position.x, 0, simulationSize.x);
+                particle.Position.y = Math.Clamp(particle.Position.y, 0, simulationSize.y);
+                particle.Position.z = Math.Clamp(particle.Position.z, 0, simulationSize.y);
+                particle.GameObject.transform.position = particle.Position;
+                
+                particles[i] = particle;
+            }
         }
 
         public float CalculateDensity(Vector3 samplePoint, Particle[] particles)
@@ -70,11 +98,6 @@ namespace Simulation.Scripts
             }
 
             return particles;
-        }
-
-        private void OnDrawGizmos()
-        {
-            Gizmos.DrawWireSphere(point, smoothingRadius);
         }
     }
 }

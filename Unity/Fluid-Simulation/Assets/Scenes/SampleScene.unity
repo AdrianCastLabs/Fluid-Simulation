@@ -200,7 +200,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_BackGroundColor: {r: 0, g: 0, b: 0, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -478,11 +478,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Simulation.Scripts.FluidSimulation
   utils: {fileID: 1721007417}
   particlePrefab: {fileID: 740200351}
-  simulationSize: {x: 5, y: 5}
-  nParticles: 1000
+  simulationSize: {x: 10, y: 5}
+  nParticles: 50
   radius: 0.1
   smoothingRadius: 1.2
-  pressureMultiplier: 100
+  pressureMultiplier: 20
   point: {x: 0, y: 0, z: 0}
 --- !u!114 &1721007417
 MonoBehaviour:
