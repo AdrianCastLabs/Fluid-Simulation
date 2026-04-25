@@ -481,10 +481,9 @@ MonoBehaviour:
   nParticles: 200
   radius: 0.1
   targetDensity: 1
-  pressureMultiplier: 2
+  pressureMultiplier: 15.84
   smoothingRadius: 2
   mass: 1
-  gravity: 0
 --- !u!114 &1721007417
 MonoBehaviour:
   m_ObjectHideFlags: 0

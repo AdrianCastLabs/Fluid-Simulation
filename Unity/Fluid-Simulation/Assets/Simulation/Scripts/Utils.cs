@@ -53,7 +53,7 @@ namespace Simulation.Scripts
         {
             if (distance >= radius) return 0;
 
-            float scale = -12 / ((float)Math.Pow(radius, 4) * (float)Math.PI);
+            float scale = 12 / ((float)Math.Pow(radius, 4) * (float)Math.PI);
             return (distance - radius) * scale;
         }
 

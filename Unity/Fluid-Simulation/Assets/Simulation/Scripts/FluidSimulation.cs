@@ -12,14 +12,13 @@ namespace Simulation.Scripts
         public Utils utils;
         // Simulation settings
         [SerializeField] private Vector2 simulationSize = new Vector2(10.0f, 10.0f);
-        [SerializeField] private int nParticles = 5;
+        [SerializeField] private int nParticles = 200;
         [SerializeField] private float radius = 0.5f;
         // fluid settings
         [SerializeField] private float targetDensity = 1.0f;
         [SerializeField] private float pressureMultiplier = 1.0f;
         [SerializeField] private float smoothingRadius = 1.0f;
         [SerializeField] private float mass = 1.0f;
-        [SerializeField] private float gravity = 1.0f;
         
         private Particle[] particles;
         
@@ -39,7 +38,7 @@ namespace Simulation.Scripts
             // calculate pressure
             for (int i = 0; i < nParticles; i++)
             {
-                Vector3 pressureForce = CalculatePressureForce(particles[i].Position);
+                Vector3 pressureForce = CalculatePressureForce(i);
                 Vector3 pressureAcceleration = pressureForce / particles[i].Density;
                 particles[i].Velocity += pressureAcceleration * Time.deltaTime;
             }
@@ -70,7 +69,6 @@ namespace Simulation.Scripts
         private float ComputeDensity(Vector3 samplePoint)
         {
             float density = 0;
-            const float mass = 1;
 
             for (int i = 0; i < nParticles; i++)
             {
@@ -82,18 +80,23 @@ namespace Simulation.Scripts
             return density;
         }
 
-        private Vector3 CalculatePressureForce(Vector3 samplePoint)
+        private Vector3 CalculatePressureForce(int particleIndex)
         {
             Vector3 pressureForce = Vector3.zero;
 
-            for (int i = 0; i < nParticles; i++)
+            for (int otherParticleIndex = 0; otherParticleIndex < nParticles; otherParticleIndex++)
             {
-                float distance = (particles[i].Position - samplePoint).magnitude;
-                Vector3 direction = (particles[i].Position - samplePoint) / (distance + 0.1f);
+                if (particleIndex == otherParticleIndex) continue;
+                
+                Vector3 offset = particles[otherParticleIndex].Position - particles[particleIndex].Position;
+                float distance = offset.magnitude;
+                if (distance == 0) continue;
+                Vector3 direction = offset / distance;
+                
                 float slope = utils.SmoothingKernelDerivative(smoothingRadius, distance);
-                float density = particles[i].Density;
-                float sharedPressure = CalculateSharedPressure(density, particles[i].Density);
-                pressureForce += -sharedPressure * direction * slope * mass / density;
+                float density = particles[otherParticleIndex].Density;
+                float sharedPressure = CalculateSharedPressure(density, particles[particleIndex].Density);
+                pressureForce += sharedPressure * direction * slope * mass / density;
             }
 
             return pressureForce;
