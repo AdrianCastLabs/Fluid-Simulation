@@ -113,7 +113,7 @@ void Integrate(uint3 id : SV_DispatchThreadID)
     particle.velocity += acceleration * timeStep;
     
     // Apply gravity and damping
-    particle.velocity *= 0.99;
+    particle.velocity *= 0.999;
     particle.velocity.y -= gravity * timeStep;
     
     // Update position
@@ -144,8 +144,13 @@ void HandleCollisions(uint3 id : SV_DispatchThreadID)
     float minDistance = particleRadius * 2.0;
     float restitution = 0.2;
     
-    for (uint j = id.x + 1; j < (uint)nParticles; j++)
+    float3 positionDelta = float3(0, 0, 0);
+    float3 velocityDelta = float3(0, 0, 0);
+    
+    for (uint j = 0; j < (uint)nParticles; j++)
     {
+        if (id.x == j) continue;
+        
         float3 delta = particles[j].position - particles[id.x].position;
         float distSquared = dot(delta, delta);
         float minDistSquared = minDistance * minDistance;
@@ -155,23 +160,23 @@ void HandleCollisions(uint3 id : SV_DispatchThreadID)
             float distance = sqrt(distSquared);
             float3 normal = delta / distance;
             
-            // Separate overlapping particles
+            // Accumulate position correction
             float overlap = minDistance - distance;
-            particles[id.x].position -= normal * overlap * 0.5;
-            particles[j].position += normal * overlap * 0.5;
+            positionDelta -= normal * overlap * 0.5;
             
-            // Impulse-based collision response
+            // Accumulate velocity correction
             float3 relativeVelocity = particles[id.x].velocity - particles[j].velocity;
             float velAlongNormal = dot(relativeVelocity, normal);
             
             if (velAlongNormal > 0)
             {
                 float impulseMagnitude = -(1.0 + restitution) * velAlongNormal * 0.5;
-                float3 impulse = normal * impulseMagnitude;
-                
-                particles[id.x].velocity += impulse;
-                particles[j].velocity -= impulse;
+                velocityDelta += normal * impulseMagnitude;
             }
         }
     }
+    
+    // Apply accumulated changes
+    particles[id.x].position += positionDelta;
+    particles[id.x].velocity += velocityDelta;
 }

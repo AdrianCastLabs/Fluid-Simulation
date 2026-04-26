@@ -124,23 +124,22 @@ namespace  Simulation.Scripts
         {
             RunSimulation();
             RenderParticles();
+            SetComputeShaderParameters();
         }
 
         private void RunSimulation()
         {
             int threadGroups = Mathf.CeilToInt(nParticles / 64f);
-            
-            // compute densities
+    
             computeShader.Dispatch(kernelComputeDensity, threadGroups, 1, 1);
-            
-            // compute pressure forces
             computeShader.Dispatch(kernelComputePressureForce, threadGroups, 1, 1);
-            
-            // handle collisions
-            computeShader.Dispatch(kernelHandleCollisions, threadGroups, 1, 1);
-            
-            // Integrate
             computeShader.Dispatch(kernelIntegrate, threadGroups, 1, 1);
+    
+            // Run collisions multiple times with smaller corrections
+            for (int i = 0; i < 3; i++)
+            {
+                computeShader.Dispatch(kernelHandleCollisions, threadGroups, 1, 1);
+            }
         }
 
         private void RenderParticles()
