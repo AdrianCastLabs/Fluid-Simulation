@@ -1,0 +1,128 @@
+#pragma kernel ComputeDensity
+#pragma kernel ComputePressureForce
+#pragma kernel Integrate
+#pragma kernel HandleCollisions
+
+struct Particle
+{
+    float3 position;
+    float3 velocity;
+    float3 force;
+    float density;
+};
+
+RWStructuredBuffer<Particle> particles;
+
+int nParticle;
+float smoothingRadius;
+float mass;
+float targetDensity;
+float pressureMultiplier;
+float timeStep;
+float gravity;
+float simulationSize;
+float particleRadius;
+float damping;
+
+float SmoothingKernel(float radius, float distance)
+{
+    if (distance >= radius) return 0;
+    
+    float volume = (3.14159265359 * pow(radius, 4)) / 6.0;
+    return (radius - distance) * (radius - distance) / volume;
+}
+
+float SmoothingKernelDerivative(float radius, float distance)
+{
+    if (distance >= radius) return 0;
+    
+    float scale = 12.0 / (pow(radius, 4) * 3.14159265359 );
+    return (distance - radius) * scale;
+}
+
+float ConvertDensityToPressure(float density)
+{
+    return (density - targetDensity) * pressureMultiplier;
+}
+
+[numthreads(64, 1, 1)]
+void ComputeDensity(uint id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)nParticle) return;
+    int i = id.x;
+    
+    Particle particle = particles[i];
+    
+    float3 samplePoint = particle.position;
+    
+    for (int j = 0; j < nParticle; j++)
+    {
+        float distance = length(particles[j].position - samplePoint);
+        float influence = SmoothingKernel(smoothingRadius, distance);
+        particle.density += mass * influence;
+    }
+    
+    particles[i] = particle;
+}
+
+[numthreads(64, 1, 1)]
+void ComputePressureForce(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)nParticle) return;
+    int i = id.x;
+    
+    Particle particle = particles[i];
+    
+    for (int j = 0; j < nParticle; j++)
+    {
+        if (i == (uint)j) continue;
+        Particle otherParticle = particles[j];
+        
+        float3 offset = otherParticle.position - particle.position;
+        float distance = length(offset);
+        
+        if (distance < 0.0001) continue;
+        
+        float3 direction = offset / distance;
+        float slope = SmoothingKernelDerivative(smoothingRadius, distance);
+        
+        float pressureA = ConvertDensityToPressure(particle.density);
+        float pressureB = ConvertDensityToPressure(otherParticle.density);
+        float SharedPressure = (pressureA + pressureB) / 2.0;
+        
+        particle.force += SharedPressure * direction * slope * mass / otherParticle.density;
+    }
+    
+    particles[i] = particle;
+}
+
+[numthreads(64, 1, 1)]
+void Integrate(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)nParticle) return;
+    int i = id.x;
+    
+    Particle particle = particles[i];
+    
+    // Apply pressure and acceleration
+    float density = max(particle.density, 0.0001);
+    float3 acceleration = particle.force / density;
+    particle.velocity += acceleration * timeStep;
+    
+    // Update position
+    particle.position += particle.velocity * timeStep;
+    
+    particles[i] = particle;
+}
+
+[numthreads(64, 1, 1)]
+void HandleCollisions(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)nParticle) return;
+    int i = id.x;
+    
+    Particle particle = particles[i];
+    
+    
+    particles[i] = particle;
+}
