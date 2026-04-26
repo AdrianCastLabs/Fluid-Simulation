@@ -477,14 +477,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Simulation.Scripts.FluidSimulation
   utils: {fileID: 1721007417}
-  simulationSize: {x: 10, y: 10}
-  nParticles: 200
+  simulationSize: {x: 12, y: 12}
+  nParticles: 400
   radius: 0.1
   targetDensity: 1
-  pressureMultiplier: 200
+  pressureMultiplier: 20
   smoothingRadius: 2
   mass: 1
   timeStep: 0.02
+  gravity: 0
 --- !u!114 &1721007417
 MonoBehaviour:
   m_ObjectHideFlags: 0

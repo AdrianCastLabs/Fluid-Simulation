@@ -59,7 +59,7 @@ namespace Simulation.Scripts
 
         public void SetPressureColor(Particle particle, float pressure)
         {
-            float t = Mathf.InverseLerp(0f, 50f, pressure); // min, max, value
+            float t = Mathf.InverseLerp(0f, 50f, pressure / 3); // min, max, value
             float hue = 1f - t;
             
             Renderer renderer = particle.GameObject.GetComponent<Renderer>();

@@ -20,6 +20,7 @@ namespace Simulation.Scripts
         [SerializeField] private float smoothingRadius = 1.0f;
         [SerializeField] private float mass = 1.0f;
         [SerializeField] private float timeStep = 0.02f;
+        [SerializeField] private float gravity = 1.0f;
         
         private Particle[] particles;
         
@@ -44,11 +45,14 @@ namespace Simulation.Scripts
                 Vector3 pressureAcceleration = pressureForce / density;
                 particles[i].Velocity += pressureAcceleration * timeStep;
             }
+
+            HandleCollisions();
             
             // update positions
             for (int i = 0; i < nParticles; i++)
             {
-                particles[i].Velocity *= 0.99f;
+                particles[i].Velocity *= 0.999f;
+                particles[i].Velocity.y -= 1 * gravity * timeStep; 
                 particles[i].Position += particles[i].Velocity * timeStep;
 
                 float damping = 0.5f;
@@ -66,6 +70,46 @@ namespace Simulation.Scripts
                 particles[i].GameObject.transform.position = particles[i].Position;
                 utils.SetPressureColor(particles[i], ConvertDensityToPressure(particles[i].Density));
 
+            }
+        }
+        
+        private void HandleCollisions()
+        {
+            float minDistance = radius * 2.0f;
+            float restitution = 0.2f;
+
+            for (int i = 0; i < nParticles; i++)
+            {
+                for (int j = i + 1; j < nParticles; j++)
+                {
+                    Vector3 delta = particles[j].Position - particles[i].Position;
+                    float distSquared = delta.sqrMagnitude;
+                    float minDistSquared = minDistance * minDistance;
+
+                    if (distSquared < minDistSquared && distSquared > 0.0001f)
+                    {
+                        float distance = Mathf.Sqrt(distSquared);
+                        Vector3 normal = delta / distance;
+
+                        // Separate overlapping particles
+                        float overlap = minDistance - distance;
+                        particles[i].Position -= normal * overlap * 0.5f;
+                        particles[j].Position += normal * overlap * 0.5f;
+
+                        // Impulse-based collision response
+                        Vector3 relativeVelocity = particles[i].Velocity - particles[j].Velocity;
+                        float velAlongNormal = Vector3.Dot(relativeVelocity, normal);
+
+                        if (velAlongNormal > 0)
+                        {
+                            float impulseMagnitude = -(1.0f + restitution) * velAlongNormal * 0.5f;
+                            Vector3 impulse = normal * impulseMagnitude;
+
+                            particles[i].Velocity += impulse;
+                            particles[j].Velocity -= impulse;
+                        }
+                    }
+                }
             }
         }
 
