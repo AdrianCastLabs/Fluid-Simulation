@@ -13,14 +13,14 @@ struct Particle
 
 RWStructuredBuffer<Particle> particles;
 
-int nParticle;
+int nParticles;
 float smoothingRadius;
 float mass;
 float targetDensity;
 float pressureMultiplier;
 float timeStep;
 float gravity;
-float simulationSize;
+vector simulationSize;
 float particleRadius;
 float damping;
 
@@ -48,32 +48,35 @@ float ConvertDensityToPressure(float density)
 [numthreads(64, 1, 1)]
 void ComputeDensity(uint id : SV_DispatchThreadID)
 {
-    if (id.x >= (uint)nParticle) return;
+    if (id.x >= (uint)nParticles) return;
     int i = id.x;
     
     Particle particle = particles[i];
     
+    float density = 0;
     float3 samplePoint = particle.position;
     
-    for (int j = 0; j < nParticle; j++)
+    for (int j = 0; j < nParticles; j++)
     {
         float distance = length(particles[j].position - samplePoint);
         float influence = SmoothingKernel(smoothingRadius, distance);
-        particle.density += mass * influence;
+        density += mass * influence;
     }
-    
+    particle.density = density;
     particles[i] = particle;
 }
 
 [numthreads(64, 1, 1)]
 void ComputePressureForce(uint3 id : SV_DispatchThreadID)
 {
-    if (id.x >= (uint)nParticle) return;
+    if (id.x >= (uint)nParticles) return;
     int i = id.x;
     
     Particle particle = particles[i];
     
-    for (int j = 0; j < nParticle; j++)
+    float3 pressureForce = float3(0, 0, 0);
+    
+    for (int j = 0; j < nParticles; j++)
     {
         if (i == (uint)j) continue;
         Particle otherParticle = particles[j];
@@ -86,20 +89,20 @@ void ComputePressureForce(uint3 id : SV_DispatchThreadID)
         float3 direction = offset / distance;
         float slope = SmoothingKernelDerivative(smoothingRadius, distance);
         
-        float pressureA = ConvertDensityToPressure(particle.density);
-        float pressureB = ConvertDensityToPressure(otherParticle.density);
+        float pressureA = ConvertDensityToPressure(otherParticle.density);
+        float pressureB = ConvertDensityToPressure(particle.density);
         float SharedPressure = (pressureA + pressureB) / 2.0;
         
-        particle.force += SharedPressure * direction * slope * mass / otherParticle.density;
+        pressureForce += SharedPressure * direction * slope * mass / otherParticle.density;
     }
-    
+    particle.force = pressureForce;
     particles[i] = particle;
 }
 
 [numthreads(64, 1, 1)]
 void Integrate(uint3 id : SV_DispatchThreadID)
 {
-    if (id.x >= (uint)nParticle) return;
+    if (id.x >= (uint)nParticles) return;
     int i = id.x;
     
     Particle particle = particles[i];
@@ -109,20 +112,66 @@ void Integrate(uint3 id : SV_DispatchThreadID)
     float3 acceleration = particle.force / density;
     particle.velocity += acceleration * timeStep;
     
+    // Apply gravity and damping
+    particle.velocity *= 0.99;
+    particle.velocity.y -= gravity * timeStep;
+    
     // Update position
     particle.position += particle.velocity * timeStep;
+    
+    // Boundary conditions
+    if (particle.position.x <= 0.0 || particle.position.x >= simulationSize.x)
+    {
+        particle.velocity.x *= -damping;
+        particle.position.x = clamp(particle.position.x, 0.0, simulationSize.x);
+    }
+    
+    if (particle.position.y <= 0.0 || particle.position.y >= simulationSize.y)
+    {
+        particle.velocity.y *= -damping;
+        particle.position.y = clamp(particle.position.y, 0.0, simulationSize.y);
+    }
     
     particles[i] = particle;
 }
 
+
 [numthreads(64, 1, 1)]
 void HandleCollisions(uint3 id : SV_DispatchThreadID)
 {
-    if (id.x >= (uint)nParticle) return;
-    int i = id.x;
+    if (id.x >= (uint)nParticles) return;
     
-    Particle particle = particles[i];
+    float minDistance = particleRadius * 2.0;
+    float restitution = 0.2;
     
-    
-    particles[i] = particle;
+    for (uint j = id.x + 1; j < (uint)nParticles; j++)
+    {
+        float3 delta = particles[j].position - particles[id.x].position;
+        float distSquared = dot(delta, delta);
+        float minDistSquared = minDistance * minDistance;
+        
+        if (distSquared < minDistSquared && distSquared > 0.0001)
+        {
+            float distance = sqrt(distSquared);
+            float3 normal = delta / distance;
+            
+            // Separate overlapping particles
+            float overlap = minDistance - distance;
+            particles[id.x].position -= normal * overlap * 0.5;
+            particles[j].position += normal * overlap * 0.5;
+            
+            // Impulse-based collision response
+            float3 relativeVelocity = particles[id.x].velocity - particles[j].velocity;
+            float velAlongNormal = dot(relativeVelocity, normal);
+            
+            if (velAlongNormal > 0)
+            {
+                float impulseMagnitude = -(1.0 + restitution) * velAlongNormal * 0.5;
+                float3 impulse = normal * impulseMagnitude;
+                
+                particles[id.x].velocity += impulse;
+                particles[j].velocity -= impulse;
+            }
+        }
+    }
 }

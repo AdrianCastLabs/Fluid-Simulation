@@ -225,7 +225,7 @@ Camera:
   far clip plane: 1000
   field of view: 34
   orthographic: 1
-  orthographic size: 22.4
+  orthographic size: 37.1
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -250,7 +250,7 @@ Transform:
   m_GameObject: {fileID: 519420028}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 13.01, y: 12.89, z: -10}
+  m_LocalPosition: {x: 21.57, y: 24.15, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -440,8 +440,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1721007415}
-  - component: {fileID: 1721007416}
-  - component: {fileID: 1721007417}
+  - component: {fileID: 1721007418}
   m_Layer: 0
   m_Name: SimulationManager
   m_TagString: Untagged
@@ -464,7 +463,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1721007416
+--- !u!114 &1721007418
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -473,32 +472,22 @@ MonoBehaviour:
   m_GameObject: {fileID: 1721007414}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 351a94c89a5399d47b0b564119321e35, type: 3}
+  m_Script: {fileID: 11500000, guid: 7cfa27b587b05234c87d01b58e0073c1, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Simulation.Scripts.FluidSimulation
-  utils: {fileID: 1721007417}
-  simulationSize: {x: 7, y: 7}
-  nParticles: 300
-  radius: 0.3
+  m_EditorClassIdentifier: Assembly-CSharp::Simulation.Scripts.FluidSimulationGPU
+  computeShader: {fileID: 7200000, guid: eab660f97b35d204e8e8068901eb06e0, type: 3}
+  particleMesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+  particleMaterial: {fileID: 2100000, guid: 79d0efd9ee228374f9e751a96afa70ea, type: 2}
+  simulationSize: {x: 50, y: 50, z: 0}
+  nParticles: 2000
+  particleRadius: 0.5
   targetDensity: 1
-  pressureMultiplier: 50
+  pressureMultiplier: 1
   smoothingRadius: 2
   mass: 1
   timeStep: 0.02
   gravity: 1
---- !u!114 &1721007417
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1721007414}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6dda3a45d7573514c9a4b42f381c9fa9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Simulation.Scripts.Utils
-  particlePrefab: {fileID: 740200351}
+  damping: 0.5
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
