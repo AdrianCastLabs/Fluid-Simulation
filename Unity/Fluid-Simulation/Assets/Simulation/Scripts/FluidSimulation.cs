@@ -51,7 +51,7 @@ namespace Simulation.Scripts
             // update positions
             for (int i = 0; i < nParticles; i++)
             {
-                particles[i].Velocity *= 0.999f;
+                particles[i].Velocity *= 0.9999f;
                 particles[i].Velocity.y -= 1 * gravity * timeStep; 
                 particles[i].Position += particles[i].Velocity * timeStep;
 

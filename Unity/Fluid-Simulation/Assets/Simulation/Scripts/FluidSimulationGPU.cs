@@ -136,7 +136,7 @@ namespace  Simulation.Scripts
             computeShader.Dispatch(kernelIntegrate, threadGroups, 1, 1);
     
             // Run collisions multiple times with smaller corrections
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < 1; i++)
             {
                 computeShader.Dispatch(kernelHandleCollisions, threadGroups, 1, 1);
             }

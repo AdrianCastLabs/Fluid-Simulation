@@ -146,6 +146,7 @@ void HandleCollisions(uint3 id : SV_DispatchThreadID)
     
     float3 positionDelta = float3(0, 0, 0);
     float3 velocityDelta = float3(0, 0, 0);
+    int collisionCount = 0;
     
     for (uint j = 0; j < (uint)nParticles; j++)
     {
@@ -160,11 +161,9 @@ void HandleCollisions(uint3 id : SV_DispatchThreadID)
             float distance = sqrt(distSquared);
             float3 normal = delta / distance;
             
-            // Accumulate position correction
             float overlap = minDistance - distance;
             positionDelta -= normal * overlap * 0.5;
             
-            // Accumulate velocity correction
             float3 relativeVelocity = particles[id.x].velocity - particles[j].velocity;
             float velAlongNormal = dot(relativeVelocity, normal);
             
@@ -173,10 +172,17 @@ void HandleCollisions(uint3 id : SV_DispatchThreadID)
                 float impulseMagnitude = -(1.0 + restitution) * velAlongNormal * 0.5;
                 velocityDelta += normal * impulseMagnitude;
             }
+            
+            collisionCount++;
         }
     }
     
-    // Apply accumulated changes
+    if (collisionCount > 0)
+    {
+        positionDelta /= (float)collisionCount;
+        velocityDelta /= (float)collisionCount;
+    }
+    
     particles[id.x].position += positionDelta;
     particles[id.x].velocity += velocityDelta;
 }

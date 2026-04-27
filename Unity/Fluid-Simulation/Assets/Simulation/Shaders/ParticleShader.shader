@@ -3,6 +3,8 @@ Shader "Custom/ParticleInstancedShader"
     Properties
     {
         _Radius ("Radius", Float) = 0.5
+        _MaxSpeed ("Max Speed", Float) = 10.0
+        _MinSpeed ("Min Speed", Float) = 0.0
     }
     
     SubShader
@@ -29,7 +31,10 @@ Shader "Custom/ParticleInstancedShader"
             };
 
             StructuredBuffer<GPUParticle> particles;
+
             float _Radius;
+            float _MaxSpeed;
+            float _MinSpeed;
 
             struct appdata
             {
@@ -40,13 +45,8 @@ Shader "Custom/ParticleInstancedShader"
             struct v2f
             {
                 float4 pos : SV_POSITION;
-                float pressure : TEXCOORD0;
+                float speed : TEXCOORD0;
             };
-
-            float ConvertDensityToPressure(float density)
-            {
-                return (density - 1.0) * 1.0; // Using default values
-            }
 
             v2f vert(appdata v)
             {
@@ -54,30 +54,39 @@ Shader "Custom/ParticleInstancedShader"
                 
                 GPUParticle particle = particles[v.instanceID];
                 
-                // Scale and position the mesh
                 float4 worldPos = float4(particle.position, 1.0);
                 worldPos.xyz += v.vertex.xyz * _Radius;
                 
                 o.pos = mul(UNITY_MATRIX_VP, worldPos);
-                o.pressure = ConvertDensityToPressure(particle.density);
+                o.speed = length(particle.velocity);
                 
                 return o;
             }
 
+            float3 Heatmap(float t)
+            {
+                t = saturate(t);
+
+                float3 c1 = float3(0.0, 0.0, 1.0); 
+                float3 c2 = float3(0.0, 1.0, 1.0); 
+                float3 c3 = float3(1.0, 1.0, 0.0); 
+                float3 c4 = float3(1.0, 0.0, 0.0); 
+
+                if (t < 0.33)
+                    return lerp(c1, c2, t / 0.33);
+                else if (t < 0.66)
+                    return lerp(c2, c3, (t - 0.33) / 0.33);
+                else
+                    return lerp(c3, c4, (t - 0.66) / 0.34);
+            }
+
             fixed4 frag(v2f i) : SV_Target
             {
-                // Color based on pressure
-                float t = saturate(i.pressure / 16.0); // Adjust range as needed
-                float hue = 1.0 - t;
-                
-                // Simple HSV to RGB conversion
-                float3 rgb = saturate(float3(
-                    abs(hue * 6.0 - 3.0) - 1.0,
-                    2.0 - abs(hue * 6.0 - 2.0),
-                    2.0 - abs(hue * 6.0 - 4.0)
-                ));
-                
-                return fixed4(rgb, 1.0);
+                float t = (i.speed - _MinSpeed) / (_MaxSpeed - _MinSpeed);
+                t = smoothstep(0.0, 1.0, t);
+                float3 col = Heatmap(t);
+                col *= lerp(0.6, 1.5, t);
+                return float4(col, 1.0);
             }
             ENDCG
         }
