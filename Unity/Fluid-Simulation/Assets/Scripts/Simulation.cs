@@ -27,7 +27,8 @@ public class Simulation : MonoBehaviour
     private void Update()
     {
         UpdateParticles();
-        ResolveCollisions();
+        ResolveParticleCollisions();
+        ResolveBoundaryCollisions();
     }
 
     private void InitializeParticles()
@@ -67,8 +68,9 @@ public class Simulation : MonoBehaviour
         }
     }
 
-    private void ResolveCollisions()
+    private void ResolveParticleCollisions()
     {
+        float damping = 0.9f;
         for (int i = 0; i < nParticles; i++)
         {
             for (int j = i + 1; j < nParticles; j++)
@@ -92,11 +94,39 @@ public class Simulation : MonoBehaviour
                 float viN = Vector3.Dot(vi, normal);
                 float vjN = Vector3.Dot(vj, normal);
 
-                float impulse = vjN - viN;
+                float impulse = vjN - viN * damping;
 
                 velocities[i] += impulse * normal;
                 velocities[j] -= impulse * normal;
             }
         }
     }
+
+    private void ResolveBoundaryCollisions()
+    {
+        float damping = 0.9f;
+        for (int i = 0; i < nParticles; i++)
+        {
+            if (positions[i].x >= simulationSize.x)
+            {
+                velocities[i].x *= -1 * damping;
+            }
+            
+            if (positions[i].x <= -simulationSize.x)
+            {
+                velocities[i].x *= -1 * damping;
+            }
+            
+            if (positions[i].y >= simulationSize.y)
+            {
+                velocities[i].y *= -1 * damping;
+            }
+            
+            if (positions[i].y <= -simulationSize.y)
+            {
+                velocities[i].y *= -1 * damping;
+            }
+        }
+    }
+    
 }
