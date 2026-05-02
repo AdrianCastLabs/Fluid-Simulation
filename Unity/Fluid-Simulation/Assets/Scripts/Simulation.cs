@@ -1,4 +1,5 @@
 using System;
+using Unity.Mathematics;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -11,13 +12,22 @@ public class Simulation : MonoBehaviour
     [SerializeField] private GameObject[] objects;
     
     [SerializeField] private Vector3 simulationSize;
+    [SerializeField] private float smoothingRadius;
 
     [SerializeField] private uint nParticles;
+    [SerializeField] private float radius;
 
     private void Start()
     {
         InitializeParticles();
         UpdateParticles();
+        
+    }
+
+    private void Update()
+    {
+        UpdateParticles();
+        ResolveCollisions();
     }
 
     private void InitializeParticles()
@@ -31,10 +41,14 @@ public class Simulation : MonoBehaviour
 
         for (int i = 0; i < nParticles; i++)
         {
-            float randomX = Random.Range(0.0f, simulationSize.x);
-            float randomY = Random.Range(0.0f, simulationSize.y);
+            float posX = Random.Range(-simulationSize.x, simulationSize.x);
+            float posY = Random.Range(-simulationSize.y, simulationSize.y);
             
-            positions[i] = new Vector3(randomX, randomY, 0.0f);
+            float velX = Random.Range(-simulationSize.x, simulationSize.x);
+            float velY = Random.Range(-simulationSize.y, simulationSize.y);
+            
+            positions[i] = new Vector3(posX, posY, 0.0f);
+            velocities[i] = new Vector3(velX, velY, 0.0f) * 0.1f;
             
             objects[i] = Instantiate(particlePrefab);
             objects[i].gameObject.transform.parent = particles.transform;
@@ -45,7 +59,44 @@ public class Simulation : MonoBehaviour
     {
         for (int i = 0; i < nParticles; i++)
         {
+            positions[i] += velocities[i] * Time.deltaTime;
+            positions[i] = math.clamp(positions[i], -simulationSize, simulationSize);
+            
             objects[i].transform.position = positions[i];
+            objects[i].transform.localScale = Vector3.one * radius * 5.7f;
+        }
+    }
+
+    private void ResolveCollisions()
+    {
+        for (int i = 0; i < nParticles; i++)
+        {
+            for (int j = i + 1; j < nParticles; j++)
+            {
+                if (i == j) continue;
+                
+                Vector3 direction = positions[j] - positions[i];
+                float distance = direction.magnitude;
+                
+                if (distance <= 0.001f || distance > radius) continue;
+
+                Vector3 normal = direction / distance;
+                float overlap = distance - radius;
+
+                positions[i] += normal * overlap * 0.5f;
+                positions[j] -= normal * overlap * 0.5f;
+
+                Vector3 vi = velocities[i];
+                Vector3 vj = velocities[j];
+
+                float viN = Vector3.Dot(vi, normal);
+                float vjN = Vector3.Dot(vj, normal);
+
+                float impulse = vjN - viN;
+
+                velocities[i] += impulse * normal;
+                velocities[j] -= impulse * normal;
+            }
         }
     }
 }
