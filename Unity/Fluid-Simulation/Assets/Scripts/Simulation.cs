@@ -13,7 +13,6 @@ public class Simulation : MonoBehaviour
     [SerializeField] private Vector3[] velocities;
     [SerializeField] private float[] densities;
     [SerializeField] private GameObject[] objects;
-    [SerializeField] private float totalDensity;
     
     [Header("Simulation Settings")]
     [SerializeField] private Vector3 simulationSize;
@@ -21,6 +20,8 @@ public class Simulation : MonoBehaviour
     [SerializeField] private uint nParticles;
     [SerializeField] private float particleRadius;
     [SerializeField] private float mass;
+    [SerializeField] private float targetDensity;
+    [SerializeField] private float pressureMultiplier;
 
     [Header("Gizmos")]
     [SerializeField] private bool viewSmoothingRadius;
@@ -39,11 +40,31 @@ public class Simulation : MonoBehaviour
         UpdateParticles();
         ResolveParticleCollisions();
         ResolveBoundaryCollisions();
-        ComputeDensities();
+        SimulationStep(0.02f);
 
         if (Input.GetMouseButtonDown(0))
         {
             print(CalculateDensity(positions[1]));
+        }
+    }
+
+    private void SimulationStep(float deltaTime)
+    {
+        for (int i = 0; i < nParticles; i++)
+        {
+            densities[i] = CalculateDensity(positions[i]);
+        }
+
+        for (int i = 0; i < nParticles; i++)
+        {
+            Vector3 pressureForce = CalculatePressureForce(positions[i]);
+            Vector3 pressureAcceleration = pressureForce / densities[i];
+            velocities[i] += pressureAcceleration * deltaTime;
+        }
+
+        for (int i = 0; i < nParticles; i++)
+        {
+            positions[i] += velocities[i] * deltaTime;
         }
     }
 
@@ -156,7 +177,7 @@ public class Simulation : MonoBehaviour
             return math.pow((radius * radius) - (distance * distance), 3) * multiplier;
         }
 
-        return 0.0f;
+        return 0.01f;
     }
 
     private float CalculateDensity(Vector3 position)
@@ -172,14 +193,26 @@ public class Simulation : MonoBehaviour
         return density;
     }
 
-    private void ComputeDensities()
+    private float CalculatePressure(float density)
     {
-        totalDensity = 0;
+        return (density - targetDensity) * pressureMultiplier;
+    }
+
+    private Vector3 CalculatePressureForce(Vector3 position)
+    {
+        Vector3 pressureForce = Vector3.zero;
+
         for (int i = 0; i < nParticles; i++)
         {
-            densities[i] = CalculateDensity(positions[i]);
-            totalDensity += densities[i];
+            float distance = (positions[i] - position).magnitude;
+            if (distance <= 0.0f) continue;
+            Vector3 direction = (positions[i] - position) / distance;
+            float influence = SmoothingKernel(distance, smoothingRadius);
+            float density = densities[i];
+            pressureForce += -CalculatePressure(density) * direction * influence * mass / density;
         }
+
+        return pressureForce;
     }
 
     private void OnDrawGizmos()
