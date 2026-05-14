@@ -5,19 +5,25 @@ using Random = UnityEngine.Random;
 
 public class Simulation : MonoBehaviour
 {
+    [Header("Prefab")]
     [SerializeField] private GameObject particlePrefab;
-
+    
+    [Header("Simulation Data")]
     [SerializeField] private Vector3[] positions;
     [SerializeField] private Vector3[] velocities;
     [SerializeField] private float[] densities;
     [SerializeField] private GameObject[] objects;
+    [SerializeField] private float totalDensity;
     
+    [Header("Simulation Settings")]
     [SerializeField] private Vector3 simulationSize;
     [SerializeField] private float smoothingRadius;
-
     [SerializeField] private uint nParticles;
     [SerializeField] private float particleRadius;
     [SerializeField] private float mass;
+
+    [Header("Gizmos")]
+    [SerializeField] private bool viewSmoothingRadius;
 
     private float PI = math.PI;
 
@@ -77,7 +83,7 @@ public class Simulation : MonoBehaviour
             
             objects[i].transform.position = positions[i];
             objects[i].transform.localScale = Vector3.one * particleRadius * 5.7f;
-            objects[i].GetComponent<Renderer>().material.color = Color.HSVToRGB(math.min(1.0f, densities[i] / 300), 1.0f, 1.0f);
+            objects[i].GetComponent<Renderer>().material.color = Color.HSVToRGB(math.min(1.0f, densities[i] / 30), 1.0f, 1.0f);
         }
     }
 
@@ -144,8 +150,13 @@ public class Simulation : MonoBehaviour
 
     private float SmoothingKernel(float distance, float radius)
     {
-        float value = Math.Max(0, radius - distance);
-        return value * value * value;
+        if (0.0f <= distance && distance <= radius)
+        {
+            float multiplier = 315 / ((64 * PI) * math.pow(smoothingRadius, 9));
+            return math.pow((radius * radius) - (distance * distance), 3) * multiplier;
+        }
+
+        return 0.0f;
     }
 
     private float CalculateDensity(Vector3 position)
@@ -163,10 +174,17 @@ public class Simulation : MonoBehaviour
 
     private void ComputeDensities()
     {
+        totalDensity = 0;
         for (int i = 0; i < nParticles; i++)
         {
             densities[i] = CalculateDensity(positions[i]);
+            totalDensity += densities[i];
         }
     }
-    
+
+    private void OnDrawGizmos()
+    {
+        if (viewSmoothingRadius)
+            Gizmos.DrawWireSphere(positions[1], smoothingRadius);
+    }
 }
