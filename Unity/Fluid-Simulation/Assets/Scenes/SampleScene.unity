@@ -568,11 +568,13 @@ MonoBehaviour:
   particlePrefab: {fileID: 869590152}
   positions: []
   velocities: []
+  densities: []
   objects: []
   simulationSize: {x: 4, y: 4, z: 0}
-  smoothingRadius: 0
-  nParticles: 100
-  radius: 0.4
+  smoothingRadius: 3
+  nParticles: 200
+  particleRadius: 0.3
+  mass: 1
 --- !u!4 &2009220586
 Transform:
   m_ObjectHideFlags: 0

@@ -9,13 +9,17 @@ public class Simulation : MonoBehaviour
 
     [SerializeField] private Vector3[] positions;
     [SerializeField] private Vector3[] velocities;
+    [SerializeField] private float[] densities;
     [SerializeField] private GameObject[] objects;
     
     [SerializeField] private Vector3 simulationSize;
     [SerializeField] private float smoothingRadius;
 
     [SerializeField] private uint nParticles;
-    [SerializeField] private float radius;
+    [SerializeField] private float particleRadius;
+    [SerializeField] private float mass;
+
+    private float PI = math.PI;
 
     private void Start()
     {
@@ -29,12 +33,20 @@ public class Simulation : MonoBehaviour
         UpdateParticles();
         ResolveParticleCollisions();
         ResolveBoundaryCollisions();
+        ComputeDensities();
+
+        if (Input.GetMouseButtonDown(0))
+        {
+            print(CalculateDensity(positions[1]));
+        }
     }
 
     private void InitializeParticles()
     {
         positions = new Vector3[nParticles];
         velocities = new Vector3[nParticles];
+        
+        densities = new float[nParticles];
         objects = new GameObject[nParticles];
         
         GameObject particles = new GameObject();
@@ -64,7 +76,8 @@ public class Simulation : MonoBehaviour
             positions[i] = math.clamp(positions[i], -simulationSize, simulationSize);
             
             objects[i].transform.position = positions[i];
-            objects[i].transform.localScale = Vector3.one * radius * 5.7f;
+            objects[i].transform.localScale = Vector3.one * particleRadius * 5.7f;
+            objects[i].GetComponent<Renderer>().material.color = Color.HSVToRGB(math.min(1.0f, densities[i] / 300), 1.0f, 1.0f);
         }
     }
 
@@ -80,10 +93,10 @@ public class Simulation : MonoBehaviour
                 Vector3 direction = positions[j] - positions[i];
                 float distance = direction.magnitude;
                 
-                if (distance <= 0.001f || distance > radius) continue;
+                if (distance <= 0.001f || distance > particleRadius) continue;
 
                 Vector3 normal = direction / distance;
-                float overlap = distance - radius;
+                float overlap = distance - particleRadius;
 
                 positions[i] += normal * overlap * 0.5f;
                 positions[j] -= normal * overlap * 0.5f;
@@ -126,6 +139,33 @@ public class Simulation : MonoBehaviour
             {
                 velocities[i].y *= -1 * damping;
             }
+        }
+    }
+
+    private float SmoothingKernel(float distance, float radius)
+    {
+        float value = Math.Max(0, radius - distance);
+        return value * value * value;
+    }
+
+    private float CalculateDensity(Vector3 position)
+    {
+        float density = 0;
+
+        for (int i = 0; i < nParticles; i++)
+        {
+            float distance = (position - positions[i]).magnitude;
+            density += mass * SmoothingKernel(distance, smoothingRadius);
+        }
+
+        return density;
+    }
+
+    private void ComputeDensities()
+    {
+        for (int i = 0; i < nParticles; i++)
+        {
+            densities[i] = CalculateDensity(positions[i]);
         }
     }
     
