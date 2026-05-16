@@ -37,34 +37,26 @@ public class Simulation : MonoBehaviour
 
     private void Update()
     {
-        UpdateParticles();
+        SimulationStep(0.02f);
         ResolveParticleCollisions();
         ResolveBoundaryCollisions();
-        SimulationStep(0.02f);
-
-        if (Input.GetMouseButtonDown(0))
-        {
-            print(CalculateDensity(positions[1]));
-        }
+        UpdateParticles();
     }
 
     private void SimulationStep(float deltaTime)
     {
+        // compute Densities
         for (int i = 0; i < nParticles; i++)
         {
             densities[i] = CalculateDensity(positions[i]);
         }
-
+        
+        // compute pressure
         for (int i = 0; i < nParticles; i++)
         {
             Vector3 pressureForce = CalculatePressureForce(positions[i]);
             Vector3 pressureAcceleration = pressureForce / densities[i];
             velocities[i] += pressureAcceleration * deltaTime;
-        }
-
-        for (int i = 0; i < nParticles; i++)
-        {
-            positions[i] += velocities[i] * deltaTime;
         }
     }
 
@@ -115,8 +107,6 @@ public class Simulation : MonoBehaviour
         {
             for (int j = i + 1; j < nParticles; j++)
             {
-                if (i == j) continue;
-                
                 Vector3 direction = positions[j] - positions[i];
                 float distance = direction.magnitude;
                 
@@ -133,11 +123,9 @@ public class Simulation : MonoBehaviour
 
                 float viN = Vector3.Dot(vi, normal);
                 float vjN = Vector3.Dot(vj, normal);
-
-                float impulse = vjN - viN * damping;
-
-                velocities[i] += impulse * normal;
-                velocities[j] -= impulse * normal;
+                
+                velocities[i] += (vjN - viN) * damping * normal;
+                velocities[j] += (viN - vjN) * damping * normal;
             }
         }
     }
@@ -177,8 +165,8 @@ public class Simulation : MonoBehaviour
             return math.pow((radius * radius) - (distance * distance), 3) * multiplier;
         }
 
-        return 0.01f;
-    }
+        return 0.0f;
+    } 
 
     private float CalculateDensity(Vector3 position)
     {
