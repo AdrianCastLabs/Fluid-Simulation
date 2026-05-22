@@ -572,11 +572,12 @@ MonoBehaviour:
   objects: []
   simulationSize: {x: 4, y: 4, z: 0}
   smoothingRadius: 1.5
-  nParticles: 400
-  particleRadius: 0.2
+  nParticles: 200
+  particleRadius: 0.15
   mass: 1
   targetDensity: 1
-  pressureMultiplier: 15
+  pressureMultiplier: 1
+  dt: 0.02
   viewSmoothingRadius: 0
 --- !u!4 &2009220586
 Transform:
