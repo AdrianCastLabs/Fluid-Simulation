@@ -10,6 +10,7 @@ public class Simulation : MonoBehaviour
     
     [Header("Simulation Data")]
     [SerializeField] private Vector3[] positions;
+    [SerializeField] private Vector3[] predictedPositions;
     [SerializeField] private Vector3[] velocities;
     [SerializeField] private float[] densities;
     [SerializeField] private GameObject[] objects;
@@ -23,6 +24,7 @@ public class Simulation : MonoBehaviour
     [SerializeField] private float targetDensity;
     [SerializeField] private float pressureMultiplier;
     [SerializeField] private float dt = 0.02f;
+    [SerializeField] private float gravity;
 
     [Header("Gizmos")]
     [SerializeField] private bool viewSmoothingRadius;
@@ -46,10 +48,17 @@ public class Simulation : MonoBehaviour
 
     private void SimulationStep(float deltaTime)
     {
+        // predict next positions and apply gravity
+        for (int i = 0; i < nParticles; i++)
+        {
+            velocities[i] += Vector3.down * gravity * deltaTime;
+            predictedPositions[i] = positions[i] + velocities[i] * deltaTime;
+        }
+        
         // compute Densities
         for (int i = 0; i < nParticles; i++)
         {
-            densities[i] = CalculateDensity(positions[i]);
+            densities[i] = CalculateDensity(predictedPositions[i]);
         }
         
         // compute pressure
@@ -64,6 +73,7 @@ public class Simulation : MonoBehaviour
     private void InitializeParticles()
     {
         positions = new Vector3[nParticles];
+        predictedPositions = new Vector3[nParticles];
         velocities = new Vector3[nParticles];
         
         densities = new float[nParticles];
@@ -175,10 +185,10 @@ public class Simulation : MonoBehaviour
     {
         if (distance <= radius)
         {
-            float constant = -15f / (PI * math.pow(radius, 6));
+            float constant = -45f / (PI * math.pow(radius, 6));
             float value = radius - distance;
 
-            return constant * value * value * value;
+            return constant * value * value;
         }
 
         return 0.0f;
@@ -192,7 +202,7 @@ public class Simulation : MonoBehaviour
 
         for (int i = 0; i < nParticles; i++)
         {
-            float distance = (position - positions[i]).magnitude;
+            float distance = (position - predictedPositions[i]).magnitude;
             density += mass * Poly6Kernel(distance, smoothingRadius);
         }
 
@@ -201,7 +211,7 @@ public class Simulation : MonoBehaviour
 
     private float CalculatePressure(float density)
     {
-        return (density - targetDensity) * pressureMultiplier;
+        return math.max(0, density - targetDensity) * pressureMultiplier;
     }
 
     private Vector3 CalculatePressureForce(int particleIndex)
@@ -212,7 +222,7 @@ public class Simulation : MonoBehaviour
         {
             if (particleIndex == otherParticleIndex) continue;
 
-            Vector3 offset = positions[otherParticleIndex] - positions[particleIndex];
+            Vector3 offset = predictedPositions[otherParticleIndex] - predictedPositions[particleIndex];
             float distance = offset.magnitude;
             Vector3 direction = distance == 0 ? Random.insideUnitSphere : offset / distance;
             

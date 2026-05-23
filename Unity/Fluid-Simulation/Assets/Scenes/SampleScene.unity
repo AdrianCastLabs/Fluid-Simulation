@@ -567,17 +567,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Simulation
   particlePrefab: {fileID: 869590152}
   positions: []
+  predictedPositions: []
   velocities: []
   densities: []
   objects: []
-  simulationSize: {x: 4, y: 4, z: 0}
-  smoothingRadius: 1.5
-  nParticles: 200
-  particleRadius: 0.15
+  simulationSize: {x: 4, y: 2.2, z: 0}
+  smoothingRadius: 0.5
+  nParticles: 300
+  particleRadius: 0.1
   mass: 1
   targetDensity: 1
-  pressureMultiplier: 1
+  pressureMultiplier: 10
   dt: 0.02
+  gravity: 1
   viewSmoothingRadius: 0
 --- !u!4 &2009220586
 Transform:
