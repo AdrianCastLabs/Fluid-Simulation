@@ -19,6 +19,6 @@
   - Accuracy and stability
   - 3D
 
- <img src="Screenshots/Screenshot 2026-05-23 104957" alt="Screenshot" width="650"> 
+ <img src="Screenshots/Screenshot 2026-05-23 104957.png" alt="Screenshot" width="650"> 
 
  *Make sure to open Scenes/SampleScene when opening the project for the correct scene to load.*
