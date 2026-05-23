@@ -546,6 +546,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2009220586}
   - component: {fileID: 2009220585}
+  - component: {fileID: 2009220587}
   m_Layer: 0
   m_Name: SimulationManager
   m_TagString: Untagged
@@ -560,7 +561,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2009220584}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f175ba8ef9a077e4780996eb3746468f, type: 3}
   m_Name: 
@@ -596,6 +597,30 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2009220587
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2009220584}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 685009a8336a5ed46be2d265408c39fd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GPUSimulationManager
+  computeShader: {fileID: 7200000, guid: 6a793c4ac8c929640b2fcd18fe142508, type: 3}
+  mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+  material: {fileID: 2100000, guid: bd9aac97b208c684e8a20f1897743dc5, type: 2}
+  simulationSize: {x: 4, y: 2.2, z: 0}
+  smoothingRadius: 0.6
+  particleRadius: 0.1
+  pressureMultiplier: 5
+  targetDensity: 1
+  nParticles: 300
+  mass: 1
+  gravity: 1
+  dt: 0.02
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
