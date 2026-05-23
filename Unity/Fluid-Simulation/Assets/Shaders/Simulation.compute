@@ -1,129 +1,13 @@
-#pragma kernel PredictPositions
-#pragma kernel ComputeDensities
-#pragma kernel ComputePressureForces
-#pragma kernel Integrate
-#pragma kernel HandleCollisions
+#pragma kernel ComputeGravity
 
-RWStructuredBuffer<float3> positionsBuffer;
-RWStructuredBuffer<float3> velocitiesBuffer;
-RWStructuredBuffer<float3> predictedPositionsBuffer;
-RWStructuredBuffer<float3> densitiesBuffer;
+RWStructuredBuffer<float3> positions;
 
 int nParticles;
-float smoothingRadius;
-float targetDensity;
-float pressureMultiplier;
-float dt;
 float gravity;
-vector simulationSize;
-float particleRadius;
-float mass;
 
-// uses the poly6 smoothing kernel
-float Poly6Kernel(float distance, float radius)
+[numthreads(128,1,1)]
+void ComputeGravity (uint3 id : SV_DispatchThreadID)
 {
-    if (0.0f <= distance && distance <= radius)
-    {
-        float constant = 315 / ((64 * 3.14159265359) * pow(smoothingRadius, 9));
-        return pow((radius * radius) - (distance * distance), 3) * constant;
-    }
-
-    return 0.0f;
+    if (id.x >= nParticles) return;
+    positions[id.x].y -= 0.1 * gravity;
 }
-
-// returns the gradient of the spiky kernel
-float SpikyKernelDerivative(float distance, float radius)
-{
-    if (distance <= radius)
-    {
-        float constant = -45.0f / (3.14159265359 * pow(radius, 6));
-        float value = radius - distance;
-
-        return constant * value * value;
-    }
-
-    return 0.0f;
-}
-
-float CalculateDensity(float3 position)
-{
-    float density = 0;
-
-    for (int i = 0; i < nParticles; i++)
-    {
-        float distance = length(position - positionsBuffer[i]);
-        density += mass * Poly6Kernel(distance, smoothingRadius);
-    }
-
-    return density;
-}
-
-float CalculatePressure(float density)
-{
-    return max(0.0f, (density - targetDensity) * pressureMultiplier);
-}
-
-float CalculateSharedPressure(float densityA, float densityB)
-{
-    float pressureA = CalculatePressure(densityA);
-    float pressureB = CalculatePressure(densityB);
-    return (pressureA + pressureB) / 2;
-}
-
-float3 CalculatePressureForce(int particleIndex)
-{
-    float3 pressureForce = float3(0.0f, 0.0f, 0.0f);
-
-    for (int otherParticleIndex = 0; otherParticleIndex < nParticles; otherParticleIndex++)
-    {
-        if (particleIndex == otherParticleIndex) continue;
-
-        float3 offset = predictedPositionsBuffer[otherParticleIndex] - predictedPositionsBuffer[particleIndex];
-        float distance = length(offset);
-        if (distance < 0.0001f) continue;
-        float3 direction = offset / distance;
-            
-        float slope = SpikyKernelDerivative(distance, smoothingRadius);
-        float density = densitiesBuffer[otherParticleIndex];
-        float sharedPressure = CalculateSharedPressure(density, densitiesBuffer[particleIndex]);
-        pressureForce += sharedPressure * direction * slope * mass / density;
-    }
-
-    return pressureForce;
-}
-
-// kernels
-[numthreads(64,1,1)]
-void PredictPositions (uint3 id : SV_DispatchThreadID)
-{
-    velocitiesBuffer[id.x] += float3(0.0f, -1.0f, 0.0f) * gravity * dt;
-    predictedPositionsBuffer[id.x] = positionsBuffer[id.x] + velocitiesBuffer[id.x] * dt;
-}
-
-[numthreads(64,1,1)]
-void ComputeDensities (uint3 id : SV_DispatchThreadID)
-{
-    densitiesBuffer[id.x] = CalculateDensity(predictedPositionsBuffer[id.x]);
-}
-
-[numthreads(64,1,1)]
-void ComputePressureForces (uint3 id : SV_DispatchThreadID)
-{
-    float3 pressureForce = CalculatePressureForce(id.x);
-    float3 pressureAcceleration = pressureForce / densitiesBuffer[id.x];
-    velocitiesBuffer[id.x] += pressureAcceleration * dt;
-}
-
-[numthreads(64,1,1)]
-void Integrate (uint3 id : SV_DispatchThreadID)
-{
-    positionsBuffer[id.x] += velocitiesBuffer[id.x] * dt;
-    positionsBuffer[id.x] = clamp(positionsBuffer[id.x], -simulationSize, simulationSize);
-}
-
-[numthreads(64,1,1)]
-void HandleCollisions (uint3 id : SV_DispatchThreadID)
-{
-    positionsBuffer[id.x] = positionsBuffer[id.x];
-}
-

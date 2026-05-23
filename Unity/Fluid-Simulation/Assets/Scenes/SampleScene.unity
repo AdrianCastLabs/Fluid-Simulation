@@ -580,7 +580,7 @@ MonoBehaviour:
   targetDensity: 1
   pressureMultiplier: 4.9
   dt: 0.02
-  gravity: 1
+  gravity: 0
   viewSmoothingRadius: 0
 --- !u!4 &2009220586
 Transform:
@@ -610,17 +610,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GPUSimulationManager
   computeShader: {fileID: 7200000, guid: 6a793c4ac8c929640b2fcd18fe142508, type: 3}
-  mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+  mesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
+  pointMesh: {fileID: 0}
   material: {fileID: 2100000, guid: bd9aac97b208c684e8a20f1897743dc5, type: 2}
-  simulationSize: {x: 4, y: 2.2, z: 0}
-  smoothingRadius: 0.6
+  gravity: 0.05
+  nParticles: 8000000
   particleRadius: 0.1
-  pressureMultiplier: 5
-  targetDensity: 1
-  nParticles: 300
-  mass: 1
-  gravity: 1
-  dt: 0.02
+  simulationSize: {x: 50, y: 50, z: 50}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

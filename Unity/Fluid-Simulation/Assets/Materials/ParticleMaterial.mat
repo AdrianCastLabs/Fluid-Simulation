@@ -108,6 +108,7 @@ Material:
     - _QueueOffset: 0
     - _Radius: 0.1
     - _ReceiveShadows: 1
+    - _Size: 0.1
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
@@ -124,7 +125,7 @@ Material:
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
---- !u!114 &2116659448435696809
+--- !u!114 &5800103030124775356
 MonoBehaviour:
   m_ObjectHideFlags: 11
   m_CorrespondingSourceObject: {fileID: 0}

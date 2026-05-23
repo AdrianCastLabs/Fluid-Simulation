@@ -41,6 +41,8 @@ public class Simulation : MonoBehaviour
         SimulationStep(dt);
         ResolveParticleCollisions();
         ResolveBoundaryCollisions();
+        
+        
     }
 
     private void SimulationStep(float deltaTime)

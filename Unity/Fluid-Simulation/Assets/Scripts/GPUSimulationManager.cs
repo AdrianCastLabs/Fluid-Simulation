@@ -1,131 +1,71 @@
-using System;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
 public class GPUSimulationManager : MonoBehaviour
 {
-    [Header("Compute Shader")]
+    [Header("ComputeShader")]
     [SerializeField] private ComputeShader computeShader;
-
-    [Header("Rendering")]
+    
+    [Header("Rendering Settings")]
     [SerializeField] private Mesh mesh;
+
+    [SerializeField] private Mesh pointMesh;
     [SerializeField] private Material material;
     
     [Header("Simulation Settings")]
-    [SerializeField] private Vector3 simulationSize;
-    [SerializeField] private float smoothingRadius;
-    [SerializeField] private float particleRadius;
-    [SerializeField] private float pressureMultiplier;
-    [SerializeField] private float targetDensity;
-    [SerializeField] private int nParticles;
-    [SerializeField] private float mass;
     [SerializeField] private float gravity;
-    [SerializeField] private float dt = 0.02f;
+    [SerializeField] private int nParticles;
+    [SerializeField] private float particleRadius;
+    [SerializeField] private Vector3 simulationSize;
 
-    private int kernelPredictPositions;
-    private int kernelComputeDensities;
-    private int kernelComputePressureForces;
-    private int kernelIntegrate;
-    private int kernelHandleCollisions;
-    
+    private int kernelComputeGravity;
+
     private Vector3[] positions;
-    private Vector3[] predictedPositions;
-    private Vector3[] velocities;
-    private float[] densities;
 
     private ComputeBuffer positionsBuffer;
-    private ComputeBuffer velocitiesBuffer;
-    private ComputeBuffer predictedPositionsBuffer;
-    private ComputeBuffer densitiesBuffer;
     private ComputeBuffer argsBuffer;
 
     private uint[] args = new uint[5] { 0, 0, 0, 0, 0 };
     private Bounds bounds;
-
+    
     private void Start()
     {
-       InitializeComputeShader();
-       InitializeParticles();
-       InitializeRendering();
+        InitializeComputeShader();
+        InitializeParticles();
+        InitializeRendering();
     }
 
     private void InitializeComputeShader()
     {
-        kernelPredictPositions = computeShader.FindKernel("PredictPositions");
-        kernelComputeDensities = computeShader.FindKernel("ComputeDensities");
-        kernelComputePressureForces = computeShader.FindKernel("ComputePressureForces");
-        kernelIntegrate = computeShader.FindKernel("Integrate");
-        kernelHandleCollisions = computeShader.FindKernel("HandleCollisions");
+        kernelComputeGravity = computeShader.FindKernel("ComputeGravity");
     }
 
     private void InitializeParticles()
     {
         positions = new Vector3[nParticles];
-        predictedPositions = new Vector3[nParticles];
-        velocities = new Vector3[nParticles];
-        densities = new float[nParticles];
-        
-        GameObject particles = new GameObject();
-        particles.name = "Particles";
 
         for (int i = 0; i < nParticles; i++)
         {
-            float posX = Random.Range(-simulationSize.x, simulationSize.x);
-            float posY = Random.Range(-simulationSize.y, simulationSize.y);
-            
-            float velX = Random.Range(-simulationSize.x, simulationSize.x);
-            float velY = Random.Range(-simulationSize.y, simulationSize.y);
-            
-            positions[i] = new Vector3(posX, posY, 0.0f);
-            velocities[i] = new Vector3(velX, velY, 0.0f) * 0.1f;
+            positions[i] = new Vector3(
+                Random.Range(-simulationSize.x, simulationSize.x),
+                Random.Range(-simulationSize.y, simulationSize.y),
+                Random.Range(-simulationSize.z, simulationSize.z)
+                );
         }
-        
-        // create compute buffers
-        positionsBuffer = new ComputeBuffer(nParticles, Marshal.SizeOf(typeof(Vector3)));
-        velocitiesBuffer = new ComputeBuffer(nParticles, Marshal.SizeOf(typeof(Vector3)));
-        predictedPositionsBuffer = new ComputeBuffer(nParticles, Marshal.SizeOf(typeof(Vector3)));
-        densitiesBuffer = new ComputeBuffer(nParticles, Marshal.SizeOf(typeof(Vector3)));
-        
-        positionsBuffer.SetData(positions);
-        velocitiesBuffer.SetData(velocities);
-        predictedPositionsBuffer.SetData(predictedPositions);
-        densitiesBuffer.SetData(densities);
-        
-        // set buffers to all kernels
-        computeShader.SetBuffer(kernelPredictPositions, "predictedPositionsBuffer", predictedPositionsBuffer);
-        computeShader.SetBuffer(kernelPredictPositions, "positionsBuffer", positionsBuffer);
-        computeShader.SetBuffer(kernelPredictPositions, "velocitiesBuffer", velocitiesBuffer);
-        
-        computeShader.SetBuffer(kernelComputeDensities, "densitiesBuffer", densitiesBuffer);
-        computeShader.SetBuffer(kernelComputeDensities, "positionsBuffer", positionsBuffer);
-        computeShader.SetBuffer(kernelComputeDensities, "predictedPositionsBuffer", predictedPositionsBuffer);
-        
-        computeShader.SetBuffer(kernelComputePressureForces, "densitiesBuffer", densitiesBuffer);
-        computeShader.SetBuffer(kernelComputePressureForces, "velocitiesBuffer", velocitiesBuffer);
-        computeShader.SetBuffer(kernelComputePressureForces, "predictedPositionsBuffer", velocitiesBuffer);
 
+        positionsBuffer = new ComputeBuffer(nParticles, sizeof(float) * 3);
+        positionsBuffer.SetData(positions);
         
-        computeShader.SetBuffer(kernelIntegrate, "positionsBuffer", positionsBuffer);
-        computeShader.SetBuffer(kernelIntegrate, "velocitiesBuffer", velocitiesBuffer);
+        computeShader.SetBuffer(kernelComputeGravity, "positions",  positionsBuffer);
         
-        computeShader.SetBuffer(kernelHandleCollisions, "positionsBuffer", positionsBuffer);
-        
-        // set constant parameters
         SetComputeShaderParameters();
     }
-    
+
     private void SetComputeShaderParameters()
     {
-        computeShader.SetInt("nParticles", nParticles);
-        computeShader.SetFloat("smoothingRadius", smoothingRadius);
-        computeShader.SetFloat("mass", mass);
-        computeShader.SetFloat("targetDensity", targetDensity);
-        computeShader.SetFloat("pressureMultiplier", pressureMultiplier);
-        computeShader.SetFloat("dt", dt);
         computeShader.SetFloat("gravity", gravity);
-        computeShader.SetVector("simulationSize", simulationSize);
-        computeShader.SetFloat("particleRadius", particleRadius);
+        computeShader.SetFloat("nParticles", nParticles);
     }
 
     private void InitializeRendering()
@@ -136,36 +76,31 @@ public class GPUSimulationManager : MonoBehaviour
         argsBuffer = new ComputeBuffer(1, args.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
         argsBuffer.SetData(args);
         
-        // set buffers to material
+        // setup material
         material.SetBuffer("positions", positionsBuffer);
-        material.SetBuffer("velocities", velocitiesBuffer);
         material.SetFloat("_Radius", particleRadius);
         
         // set bounds for culling
         bounds = new Bounds(
-            new Vector3(simulationSize.x / 2, simulationSize.y / 2, simulationSize.z / 2),
-            new Vector3(simulationSize.x, simulationSize.y, simulationSize.z)
+            Vector3.zero,
+            Vector3.one * 1000.0f
         );
     }
 
     private void Update()
     {
-        RunSimulation();
+        RunComputeShader();
         RenderParticles();
         SetComputeShaderParameters();
     }
 
-    private void RunSimulation()
+    private void RunComputeShader()
     {
-        int threadGroups = Mathf.CeilToInt(nParticles / 64f);
+        int threadGroups = Mathf.CeilToInt(nParticles / 128f);
         
-        computeShader.Dispatch(kernelPredictPositions, threadGroups, 1, 1);
-        computeShader.Dispatch(kernelComputeDensities, threadGroups, 1, 1);
-        computeShader.Dispatch(kernelComputePressureForces, threadGroups, 1, 1);
-        computeShader.Dispatch(kernelIntegrate, threadGroups, 1, 1);
-        computeShader.Dispatch(kernelHandleCollisions, threadGroups, 1 ,1);
+        computeShader.Dispatch(kernelComputeGravity, threadGroups, 1, 1);
     }
-    
+
     private void RenderParticles()
     {
         Graphics.DrawMeshInstancedIndirect(
@@ -173,17 +108,7 @@ public class GPUSimulationManager : MonoBehaviour
             0,
             material,
             bounds,
-            argsBuffer,
-            castShadows: UnityEngine.Rendering.ShadowCastingMode.Off
+            argsBuffer
         );
-    }
-    
-    private void OnDestroy()
-    {
-        positionsBuffer?.Release();
-        velocitiesBuffer?.Release();
-        predictedPositionsBuffer?.Release();
-        densitiesBuffer?.Release();
-        argsBuffer?.Release();
     }
 }
