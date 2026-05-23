@@ -34,8 +34,6 @@ public class Simulation : MonoBehaviour
     private void Start()
     {
         InitializeParticles();
-        UpdateParticles();
-        
     }
 
     private void Update()
@@ -43,7 +41,6 @@ public class Simulation : MonoBehaviour
         SimulationStep(dt);
         ResolveParticleCollisions();
         ResolveBoundaryCollisions();
-        UpdateParticles();
     }
 
     private void SimulationStep(float deltaTime)
@@ -67,6 +64,17 @@ public class Simulation : MonoBehaviour
             Vector3 pressureForce = CalculatePressureForce(i);
             Vector3 pressureAcceleration = pressureForce / densities[i];
             velocities[i] += pressureAcceleration * deltaTime;
+        }
+        
+        // integrate final positions
+        for (int i = 0; i < nParticles; i++)
+        {
+            positions[i] += velocities[i] * dt;
+            positions[i] = math.clamp(positions[i], -simulationSize, simulationSize);
+            
+            objects[i].transform.position = positions[i];
+            objects[i].transform.localScale = Vector3.one * particleRadius * 5.7f;
+            objects[i].GetComponent<Renderer>().material.color = Color.HSVToRGB(math.min(1.0f, densities[i] / 30), 1.0f, 1.0f);
         }
     }
 
@@ -95,19 +103,6 @@ public class Simulation : MonoBehaviour
             
             objects[i] = Instantiate(particlePrefab);
             objects[i].gameObject.transform.parent = particles.transform;
-        }
-    }
-
-    private void UpdateParticles()
-    {
-        for (int i = 0; i < nParticles; i++)
-        {
-            positions[i] += velocities[i] * dt;
-            positions[i] = math.clamp(positions[i], -simulationSize, simulationSize);
-            
-            objects[i].transform.position = positions[i];
-            objects[i].transform.localScale = Vector3.one * particleRadius * 5.7f;
-            objects[i].GetComponent<Renderer>().material.color = Color.HSVToRGB(math.min(1.0f, densities[i] / 30), 1.0f, 1.0f);
         }
     }
 
@@ -211,7 +206,7 @@ public class Simulation : MonoBehaviour
 
     private float CalculatePressure(float density)
     {
-        return math.max(0, density - targetDensity) * pressureMultiplier;
+        return math.max(0.0f, (density - targetDensity) * pressureMultiplier);
     }
 
     private Vector3 CalculatePressureForce(int particleIndex)
