@@ -21,15 +21,12 @@ float viscosityStrength;
 
 
 // uses the poly6 smoothing kernel
-float Poly6Kernel(float distance, float radius)
+float SmoothingKernel(float distance, float radius)
 {
-    if (0.0f <= distance && distance <= radius)
-    {
-        float constant = 315.0f / ((64.0f * 3.14159265359f) * pow(abs(radius), 9.0f));
-        return pow((radius * radius) - (distance * distance), 3.0f) * constant;
-    }
-
-    return 0.0f;
+    if (distance >= radius) return 0;
+    
+    float volume = (3.14159265359f * pow(radius, 4)) / 6;
+    return (radius - distance) * (radius - distance) / volume;
 }
 
 float3 CalculateViscosityForce(int particleIndex)
@@ -46,7 +43,7 @@ float3 CalculateViscosityForce(int particleIndex)
         if (distance > smoothingRadius) continue;
 
         float density = max(densities[otherParticleIndex], 0.0001f);
-        float influence = Poly6Kernel(distance, smoothingRadius);
+        float influence = SmoothingKernel(distance, smoothingRadius);
 
         viscosityForce += 
             (velocities[otherParticleIndex] - velocities[particleIndex]) *
@@ -65,7 +62,7 @@ float CalculateDensity(float3 position)
     for (int i = 0; i < nParticles; i++)
     {
         float distance = length(position - predictedPositions[i]);
-        density += mass * Poly6Kernel(distance, smoothingRadius);
+        density += mass * SmoothingKernel(distance, smoothingRadius);
     }
 
     return density;
@@ -84,17 +81,12 @@ float CalculateSharedPressure(float densityA, float densityB)
 }
 
 // returns the gradient of the spiky kernel
-float SpikyKernelDerivative(float distance, float radius)
+float SmoothingKernelDerivative(float distance, float radius)
 {
-    if (distance <= radius)
-    {
-        float constant = -45.0f / (3.14159265359f * pow(radius, 6.0f));
-        float value = radius - distance;
-
-        return constant * value * value;
-    }
-
-    return 0.0f;
+    if (distance >= radius) return 0;
+    
+    float scale = 12 / (pow(radius, 4) * 3.14159265359f);
+    return (distance - radius) * scale;
 }
 
 float3  CalculatePressureForce(int particleIndex)
@@ -110,7 +102,7 @@ float3  CalculatePressureForce(int particleIndex)
         if (distance < 0.0001f) continue;
         float3 direction = offset / distance;
             
-        float slope = SpikyKernelDerivative(distance, smoothingRadius);
+        float slope = SmoothingKernelDerivative(distance, smoothingRadius);
         float density = densities[otherParticleIndex];
         float sharedPressure = CalculateSharedPressure(density, densities[particleIndex]);
         pressureForce += sharedPressure * direction * slope * mass / density;

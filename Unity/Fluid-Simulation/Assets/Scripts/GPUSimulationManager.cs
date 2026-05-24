@@ -147,6 +147,7 @@ public class GPUSimulationManager : MonoBehaviour
         
         // setup material
         material.SetBuffer("positions", positionsBuffer);
+        material.SetBuffer("velocities", velocitiesBuffer);
         material.SetFloat("_Radius", particleRadius);
         
         // set bounds for culling

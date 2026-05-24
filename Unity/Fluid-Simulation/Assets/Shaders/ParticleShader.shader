@@ -3,6 +3,8 @@ Shader "Custom/BillboardParticles"
     Properties
     {
         _Size ("Size", Float) = 0.1
+        _MaxSpeed ("Max Speed", Float) = 10.0
+        _MinSpeed ("Min Speed", Float) = 0.0
     }
 
     SubShader
@@ -21,8 +23,12 @@ Shader "Custom/BillboardParticles"
             #include "UnityCG.cginc"
 
             StructuredBuffer<float3> positions;
+            StructuredBuffer<float3> velocities;
+            StructuredBuffer<float> densities;
 
             float _Size;
+            float _MaxSpeed;
+            float _MinSpeed;
 
             struct appdata
             {
@@ -35,6 +41,7 @@ Shader "Custom/BillboardParticles"
             struct v2f
             {
                 float4 pos : SV_POSITION;
+                float speed : TEXCOORD1;
                 float2 uv : TEXCOORD0;
             };
 
@@ -64,8 +71,26 @@ Shader "Custom/BillboardParticles"
                 );
 
                 o.uv = v.uv;
+                o.speed = length(velocities[v.instanceID]);
 
                 return o;
+            }
+            
+            float3 Heatmap(float t)
+            {
+                t = saturate(t);
+
+                float3 c1 = float3(0.0, 0.0, 1.0); 
+                float3 c2 = float3(0.0, 1.0, 1.0); 
+                float3 c3 = float3(1.0, 1.0, 0.0); 
+                float3 c4 = float3(1.0, 0.0, 0.0); 
+
+                if (t < 0.33)
+                    return lerp(c1, c2, t / 0.33);
+                else if (t < 0.66)
+                    return lerp(c2, c3, (t - 0.33) / 0.33);
+                else
+                    return lerp(c3, c4, (t - 0.66) / 0.34);
             }
 
             fixed4 frag(v2f i) : SV_Target
@@ -80,7 +105,11 @@ Shader "Custom/BillboardParticles"
                 if (dist > 1)
                     discard;
 
-                return float4(1,1,1,1);
+                float t = (i.speed * 5 - _MinSpeed) / (_MaxSpeed - _MinSpeed);
+                t = smoothstep(0.0, 1.0, t);
+                float3 col = Heatmap(t);
+                col *= lerp(0.6, 1.5, t);
+                return float4(col, 1.0);
             }
 
             ENDCG
