@@ -1,0 +1,158 @@
+#pragma kernel PredictPositions;
+#pragma kernel ComputeDensity
+#pragma kernel ComputePressureForce;
+#pragma kernel Integrate;
+#pragma kernel ResolveBoundaryCollisions;
+
+RWStructuredBuffer<float3> predictedPositions;
+RWStructuredBuffer<float3> positions;
+RWStructuredBuffer<float3> velocities;
+RWStructuredBuffer<float> densities;
+
+int nParticles;
+float gravity;
+float smoothingRadius;
+float mass;
+vector simulationSize;
+float dt;
+float pressureMultiplier;
+float targetDensity;
+
+
+// uses the poly6 smoothing kernel
+float Poly6Kernel(float distance, float radius)
+{
+    if (0.0f <= distance && distance <= radius)
+    {
+        float constant = 315.0f / ((64.0f * 3.14159265359f) * pow(abs(radius), 9.0f));
+        return pow((radius * radius) - (distance * distance), 3.0f) * constant;
+    }
+
+    return 0.0f;
+}
+
+// returns the calculated density on a given sample point
+float CalculateDensity(float3 position)
+{
+    float density = 0;
+
+    for (int i = 0; i < nParticles; i++)
+    {
+        float distance = length(position - predictedPositions[i]);
+        density += mass * Poly6Kernel(distance, smoothingRadius);
+    }
+
+    return density;
+}
+
+float CalculatePressure(float density)
+{
+    return max(0.0f, (density - targetDensity) * pressureMultiplier);
+}
+
+float CalculateSharedPressure(float densityA, float densityB)
+{
+    float pressureA = CalculatePressure(densityA);
+    float pressureB = CalculatePressure(densityB);
+    return (pressureA + pressureB) / 2;
+}
+
+// returns the gradient of the spiky kernel
+float SpikyKernelDerivative(float distance, float radius)
+{
+    if (distance <= radius)
+    {
+        float constant = -45.0f / (3.14159265359f * pow(radius, 6.0f));
+        float value = radius - distance;
+
+        return constant * value * value;
+    }
+
+    return 0.0f;
+}
+
+float3  CalculatePressureForce(int particleIndex)
+{
+    float3 pressureForce = float3(0,0,0);
+
+    for (int otherParticleIndex = 0; otherParticleIndex < nParticles; otherParticleIndex++)
+    {
+        if (particleIndex == otherParticleIndex) continue;
+
+        float3 offset = predictedPositions[otherParticleIndex] - predictedPositions[particleIndex];
+        float distance = length(offset);
+        if (distance < 0.0001f) continue;
+        float3 direction = offset / distance;
+            
+        float slope = SpikyKernelDerivative(distance, smoothingRadius);
+        float density = densities[otherParticleIndex];
+        float sharedPressure = CalculateSharedPressure(density, densities[particleIndex]);
+        pressureForce += sharedPressure * direction * slope * mass / density;
+    }
+
+    return pressureForce;
+}
+
+[numthreads(64,1,1)]
+void PredictPositions(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)nParticles) return;
+    
+    velocities[id.x] += float3(0,-1,0) * gravity * dt;
+    predictedPositions[id.x] = positions[id.x] + velocities[id.x] * dt;
+}
+
+[numthreads(64,1,1)]
+void ComputeDensity (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)nParticles) return;
+    
+    densities[id.x] = CalculateDensity(predictedPositions[id.x]);
+}
+
+[numthreads(64,1,1)]
+void ComputePressureForce(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)nParticles) return;
+    
+    float3 pressureForce = CalculatePressureForce(id.x);
+    float3 pressureAcceleration = pressureForce / densities[id.x];
+    velocities[id.x] += pressureAcceleration * dt;
+}
+
+[numthreads(64,1,1)]
+void Integrate(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)nParticles) return;
+    
+    positions[id.x] += velocities[id.x] * dt;
+    positions[id.x] = clamp(positions[id.x], -simulationSize, simulationSize);
+}
+
+[numthreads(64,1,1)]
+void ResolveBoundaryCollisions(uint3 id : SV_DispatchThreadID)
+{
+    float damping = 0.9f;
+    
+    if (id.x >= (uint)nParticles) return;
+    
+    if (positions[id.x].x >= simulationSize.x)
+    {
+        velocities[id.x].x *= -1 * damping;
+    }
+            
+    if (positions[id.x].x <= -simulationSize.x)
+    {
+        velocities[id.x].x *= -1 * damping;
+    }
+            
+    if (positions[id.x].y >= simulationSize.y)
+    {
+        velocities[id.x].y *= -1 * damping;
+    }
+            
+    if (positions[id.x].y <= -simulationSize.y)
+    {
+        velocities[id.x].y *= -1 * damping;
+    }
+}
