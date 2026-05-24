@@ -17,6 +17,7 @@ vector simulationSize;
 float dt;
 float pressureMultiplier;
 float targetDensity;
+float viscosityStrength;
 
 
 // uses the poly6 smoothing kernel
@@ -29,6 +30,31 @@ float Poly6Kernel(float distance, float radius)
     }
 
     return 0.0f;
+}
+
+float3 CalculateViscosityForce(int particleIndex)
+{
+    float3 viscosityForce = float3(0, 0, 0);
+
+    for (int otherParticleIndex = 0; otherParticleIndex < nParticles; otherParticleIndex++)
+    {
+        if (particleIndex == otherParticleIndex) continue;
+
+        float3 offset = predictedPositions[otherParticleIndex] - predictedPositions[particleIndex];
+        float distance = length(offset);
+
+        if (distance > smoothingRadius) continue;
+
+        float density = max(densities[otherParticleIndex], 0.0001f);
+        float influence = Poly6Kernel(distance, smoothingRadius);
+
+        viscosityForce += 
+            (velocities[otherParticleIndex] - velocities[particleIndex]) *
+            influence *
+            mass / density;
+    }
+
+    return viscosityForce;
 }
 
 // returns the calculated density on a given sample point
@@ -115,16 +141,21 @@ void ComputePressureForce(uint3 id : SV_DispatchThreadID)
 {
     if (id.x >= (uint)nParticles) return;
     
+    float density = max(densities[id.x], 0.0001f);
+    
     float3 pressureForce = CalculatePressureForce(id.x);
-    float3 pressureAcceleration = pressureForce / densities[id.x];
+    float3 pressureAcceleration = pressureForce / density;
     velocities[id.x] += pressureAcceleration * dt;
+    
+    float3 viscosityForce = CalculateViscosityForce(id.x);
+    velocities[id.x] += viscosityForce * viscosityStrength * dt;
 }
 
 [numthreads(64,1,1)]
 void Integrate(uint3 id : SV_DispatchThreadID)
 {
     if (id.x >= (uint)nParticles) return;
-    
+    //velocities[id.x] *= 0.9999f;
     positions[id.x] += velocities[id.x] * dt;
     positions[id.x] = clamp(positions[id.x], -simulationSize, simulationSize);
 }
@@ -132,7 +163,7 @@ void Integrate(uint3 id : SV_DispatchThreadID)
 [numthreads(64,1,1)]
 void ResolveBoundaryCollisions(uint3 id : SV_DispatchThreadID)
 {
-    float damping = 0.9f;
+    float damping = 0.95f;
     
     if (id.x >= (uint)nParticles) return;
     

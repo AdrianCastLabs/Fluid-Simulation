@@ -24,6 +24,7 @@ public class GPUSimulationManager : MonoBehaviour
     [SerializeField] private float targetDensity;
     [SerializeField] private float pressureMultiplier;
     [SerializeField] private float dt;
+    [SerializeField] private float viscosityStrength;
 
     private int kernelComputeDensity;
     private int kernelComputePressureForce;
@@ -133,6 +134,7 @@ public class GPUSimulationManager : MonoBehaviour
         computeShader.SetFloat("pressureMultiplier", pressureMultiplier);
         computeShader.SetFloat("dt", dt);
         computeShader.SetVector("simulationSize", simulationSize);
+        computeShader.SetFloat("viscosityStrength", viscosityStrength);
     }
 
     private void InitializeRendering()
