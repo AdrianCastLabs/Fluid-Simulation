@@ -1,7 +1,9 @@
+#pragma kernel PredictPositions;
 #pragma kernel ComputeDensity
 #pragma kernel ComputePressureForce;
-# pragma kernel Integrate;
+#pragma kernel Integrate;
 
+RWStructuredBuffer<float3> predictedPositions;
 RWStructuredBuffer<float3> positions;
 RWStructuredBuffer<float3> velocities;
 RWStructuredBuffer<float> densities;
@@ -35,7 +37,7 @@ float CalculateDensity(float3 position)
 
     for (int i = 0; i < nParticles; i++)
     {
-        float distance = length(position - positions[i]);
+        float distance = length(position - predictedPositions[i]);
         density += mass * Poly6Kernel(distance, smoothingRadius);
     }
 
@@ -76,7 +78,7 @@ float3  CalculatePressureForce(int particleIndex)
     {
         if (particleIndex == otherParticleIndex) continue;
 
-        float3 offset = positions[otherParticleIndex] - positions[particleIndex];
+        float3 offset = predictedPositions[otherParticleIndex] - predictedPositions[particleIndex];
         float distance = length(offset);
         if (distance < 0.0001f) continue;
         float3 direction = offset / distance;
@@ -91,11 +93,20 @@ float3  CalculatePressureForce(int particleIndex)
 }
 
 [numthreads(64,1,1)]
+void PredictPositions(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)nParticles) return;
+    
+    velocities[id.x] += float3(0,-1,0) * gravity * dt;
+    predictedPositions[id.x] = positions[id.x] + velocities[id.x] * dt;
+}
+
+[numthreads(64,1,1)]
 void ComputeDensity (uint3 id : SV_DispatchThreadID)
 {
     if (id.x >= (uint)nParticles) return;
     
-    densities[id.x] = CalculateDensity(positions[id.x]);
+    densities[id.x] = CalculateDensity(predictedPositions[id.x]);
 }
 
 [numthreads(64,1,1)]

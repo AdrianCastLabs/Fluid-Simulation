@@ -620,7 +620,7 @@ MonoBehaviour:
   smoothingRadius: 0.6
   mass: 1
   targetDensity: 1
-  pressureMultiplier: 1
+  pressureMultiplier: 10
   dt: 0.02
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

@@ -28,11 +28,14 @@ public class GPUSimulationManager : MonoBehaviour
     private int kernelComputeDensity;
     private int kernelComputePressureForce;
     private int kernelIntegrate;
+    private int kernelPredictPositions;
 
+    private Vector3[] predictedPositions;
     private Vector3[] positions;
     private Vector3[] velocities;
     private float[] densities;
 
+    private ComputeBuffer predictedPositionsBuffer;
     private ComputeBuffer positionsBuffer;
     private ComputeBuffer velocitiesBuffer;
     private ComputeBuffer densitiesBuffer;
@@ -55,10 +58,12 @@ public class GPUSimulationManager : MonoBehaviour
         kernelComputeDensity = computeShader.FindKernel("ComputeDensity");
         kernelComputePressureForce = computeShader.FindKernel("ComputePressureForce");
         kernelIntegrate = computeShader.FindKernel("Integrate");
+        kernelPredictPositions = computeShader.FindKernel("PredictPositions");
     }
 
     private void InitializeParticles()
     {
+        predictedPositions = new Vector3[nParticles];
         positions = new Vector3[nParticles];
         velocities = new Vector3[nParticles];
         densities = new float[nParticles];
@@ -77,10 +82,13 @@ public class GPUSimulationManager : MonoBehaviour
                 Random.Range(-1.0f, 1.0f),
                 Random.Range(-1.0f, 1.0f)
             );
-            
+            predictedPositions[i] = positions[i];
             densities[i] = 0.00001f;
             a[i] = Vector3.zero;
         }
+
+        predictedPositionsBuffer = new ComputeBuffer(nParticles, sizeof(float) * 3);
+        predictedPositionsBuffer.SetData(predictedPositions);
 
         positionsBuffer = new ComputeBuffer(nParticles, sizeof(float) * 3);
         positionsBuffer.SetData(positions);
@@ -94,13 +102,18 @@ public class GPUSimulationManager : MonoBehaviour
         
         computeShader.SetBuffer(kernelComputeDensity, "positions",  positionsBuffer);
         computeShader.SetBuffer(kernelComputeDensity, "densities", densitiesBuffer);
+        computeShader.SetBuffer(kernelComputeDensity, "predictedPositions", predictedPositionsBuffer);
         
         computeShader.SetBuffer(kernelComputePressureForce, "densities", densitiesBuffer);
         computeShader.SetBuffer(kernelComputePressureForce, "velocities", velocitiesBuffer);
-        computeShader.SetBuffer(kernelComputePressureForce, "positions", positionsBuffer);
+        computeShader.SetBuffer(kernelComputePressureForce, "predictedPositions", predictedPositionsBuffer);
         
         computeShader.SetBuffer(kernelIntegrate, "positions", positionsBuffer);
         computeShader.SetBuffer(kernelIntegrate, "velocities", velocitiesBuffer);
+        
+        computeShader.SetBuffer(kernelPredictPositions, "predictedPositions", predictedPositionsBuffer);
+        computeShader.SetBuffer(kernelPredictPositions, "positions", positionsBuffer);
+        computeShader.SetBuffer(kernelPredictPositions, "velocities", velocitiesBuffer);
         
         SetComputeShaderParameters();
     }
@@ -152,6 +165,7 @@ public class GPUSimulationManager : MonoBehaviour
     {
         int threadGroups = Mathf.CeilToInt(nParticles / 64f);
         
+        computeShader.Dispatch(kernelPredictPositions, threadGroups, 1, 1);
         computeShader.Dispatch(kernelComputeDensity, threadGroups, 1, 1);
         computeShader.Dispatch(kernelComputePressureForce, threadGroups, 1, 1);
         computeShader.Dispatch(kernelIntegrate, threadGroups, 1 ,1);
@@ -173,6 +187,7 @@ public class GPUSimulationManager : MonoBehaviour
         densitiesBuffer?.Release();
         positionsBuffer?.Release();
         velocitiesBuffer?.Release();
+        predictedPositionsBuffer?.Release();
         argsBuffer?.Release();
     }
 }
