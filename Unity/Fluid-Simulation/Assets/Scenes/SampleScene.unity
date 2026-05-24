@@ -614,9 +614,9 @@ MonoBehaviour:
   pointMesh: {fileID: 0}
   material: {fileID: 2100000, guid: bd9aac97b208c684e8a20f1897743dc5, type: 2}
   gravity: 1
-  nParticles: 80
-  particleRadius: 0.1
-  simulationSize: {x: 5, y: 3, z: 0}
+  nParticles: 2000
+  particleRadius: 0.36
+  simulationSize: {x: 7, y: 3, z: 0}
   smoothingRadius: 0.6
   mass: 1
   targetDensity: 1

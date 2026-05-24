@@ -2,6 +2,7 @@
 #pragma kernel ComputeDensity
 #pragma kernel ComputePressureForce;
 #pragma kernel Integrate;
+#pragma kernel ResolveBoundaryCollisions;
 
 RWStructuredBuffer<float3> predictedPositions;
 RWStructuredBuffer<float3> positions;
@@ -126,4 +127,32 @@ void Integrate(uint3 id : SV_DispatchThreadID)
     
     positions[id.x] += velocities[id.x] * dt;
     positions[id.x] = clamp(positions[id.x], -simulationSize, simulationSize);
+}
+
+[numthreads(64,1,1)]
+void ResolveBoundaryCollisions(uint3 id : SV_DispatchThreadID)
+{
+    float damping = 0.9f;
+    
+    if (id.x >= (uint)nParticles) return;
+    
+    if (positions[id.x].x >= simulationSize.x)
+    {
+        velocities[id.x].x *= -1 * damping;
+    }
+            
+    if (positions[id.x].x <= -simulationSize.x)
+    {
+        velocities[id.x].x *= -1 * damping;
+    }
+            
+    if (positions[id.x].y >= simulationSize.y)
+    {
+        velocities[id.x].y *= -1 * damping;
+    }
+            
+    if (positions[id.x].y <= -simulationSize.y)
+    {
+        velocities[id.x].y *= -1 * damping;
+    }
 }
