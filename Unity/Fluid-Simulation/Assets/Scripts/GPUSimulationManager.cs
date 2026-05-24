@@ -27,6 +27,7 @@ public class GPUSimulationManager : MonoBehaviour
 
     private int kernelComputeDensity;
     private int kernelComputePressureForce;
+    private int kernelIntegrate;
 
     private Vector3[] positions;
     private Vector3[] velocities;
@@ -53,6 +54,7 @@ public class GPUSimulationManager : MonoBehaviour
     {
         kernelComputeDensity = computeShader.FindKernel("ComputeDensity");
         kernelComputePressureForce = computeShader.FindKernel("ComputePressureForce");
+        kernelIntegrate = computeShader.FindKernel("Integrate");
     }
 
     private void InitializeParticles()
@@ -97,6 +99,9 @@ public class GPUSimulationManager : MonoBehaviour
         computeShader.SetBuffer(kernelComputePressureForce, "velocities", velocitiesBuffer);
         computeShader.SetBuffer(kernelComputePressureForce, "positions", positionsBuffer);
         
+        computeShader.SetBuffer(kernelIntegrate, "positions", positionsBuffer);
+        computeShader.SetBuffer(kernelIntegrate, "velocities", velocitiesBuffer);
+        
         SetComputeShaderParameters();
     }
 
@@ -109,6 +114,7 @@ public class GPUSimulationManager : MonoBehaviour
         computeShader.SetFloat("targetDensity", targetDensity);
         computeShader.SetFloat("pressureMultiplier", pressureMultiplier);
         computeShader.SetFloat("dt", dt);
+        computeShader.SetVector("simulationSize", simulationSize);
     }
 
     private void InitializeRendering()
@@ -148,6 +154,7 @@ public class GPUSimulationManager : MonoBehaviour
         
         computeShader.Dispatch(kernelComputeDensity, threadGroups, 1, 1);
         computeShader.Dispatch(kernelComputePressureForce, threadGroups, 1, 1);
+        computeShader.Dispatch(kernelIntegrate, threadGroups, 1 ,1);
     }
 
     private void RenderParticles()

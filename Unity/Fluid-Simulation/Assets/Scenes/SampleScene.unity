@@ -613,10 +613,10 @@ MonoBehaviour:
   mesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
   pointMesh: {fileID: 0}
   material: {fileID: 2100000, guid: bd9aac97b208c684e8a20f1897743dc5, type: 2}
-  gravity: 0.005
+  gravity: 1
   nParticles: 80
   particleRadius: 0.1
-  simulationSize: {x: 5, y: 5, z: 0}
+  simulationSize: {x: 5, y: 3, z: 0}
   smoothingRadius: 0.6
   mass: 1
   targetDensity: 1

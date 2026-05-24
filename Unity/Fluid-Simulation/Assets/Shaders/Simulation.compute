@@ -1,5 +1,6 @@
 #pragma kernel ComputeDensity
 #pragma kernel ComputePressureForce;
+# pragma kernel Integrate;
 
 RWStructuredBuffer<float3> positions;
 RWStructuredBuffer<float3> velocities;
@@ -9,7 +10,7 @@ int nParticles;
 float gravity;
 float smoothingRadius;
 float mass;
-
+vector simulationSize;
 float dt;
 float pressureMultiplier;
 float targetDensity;
@@ -105,4 +106,13 @@ void ComputePressureForce(uint3 id : SV_DispatchThreadID)
     float3 pressureForce = CalculatePressureForce(id.x);
     float3 pressureAcceleration = pressureForce / densities[id.x];
     velocities[id.x] += pressureAcceleration * dt;
+}
+
+[numthreads(64,1,1)]
+void Integrate(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)nParticles) return;
+    
+    positions[id.x] += velocities[id.x] * dt;
+    positions[id.x] = clamp(positions[id.x], -simulationSize, simulationSize);
 }
