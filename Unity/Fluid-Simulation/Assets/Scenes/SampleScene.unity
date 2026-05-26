@@ -616,7 +616,7 @@ MonoBehaviour:
   gravity: 0
   nParticles: 2000
   particleRadius: 0.36
-  simulationSize: {x: 20, y: 10, z: 0}
+  simulationSize: {x: 20, y: 20, z: 0}
   smoothingRadius: 0.6
   mass: 1
   targetDensity: 1

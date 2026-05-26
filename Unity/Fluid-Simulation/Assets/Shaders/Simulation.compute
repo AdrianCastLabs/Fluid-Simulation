@@ -19,6 +19,8 @@ float pressureMultiplier;
 float targetDensity;
 float viscosityStrength;
 
+static const float damping = 0.95f;
+
 
 // uses the poly6 smoothing kernel
 float SmoothingKernel(float distance, float radius)
@@ -147,35 +149,27 @@ void ComputePressureForce(uint3 id : SV_DispatchThreadID)
 void Integrate(uint3 id : SV_DispatchThreadID)
 {
     if (id.x >= (uint)nParticles) return;
-    //velocities[id.x] *= 0.9999f;
+    velocities[id.x] *= 0.999f;
     positions[id.x] += velocities[id.x] * dt;
-    positions[id.x] = clamp(positions[id.x], -simulationSize, simulationSize);
+    
+    
+    // Boundary conditions
+    if (positions[id.x].x <= 0.0 || positions[id.x].x >= simulationSize.x)
+    {
+        velocities[id.x].x *= -damping;
+        positions[id.x].x = clamp(positions[id.x].x, 0.0, simulationSize.x);
+    }
+
+    if (positions[id.x].y <= 0.0 || positions[id.x].y >= simulationSize.y)
+    {
+        velocities[id.x].y *= -damping;
+        positions[id.x].y = clamp(positions[id.x].y, 0.0, simulationSize.y);
+    }
 }
 
 [numthreads(64,1,1)]
 void ResolveBoundaryCollisions(uint3 id : SV_DispatchThreadID)
 {
-    float damping = 0.95f;
-    
     if (id.x >= (uint)nParticles) return;
-    
-    if (positions[id.x].x >= simulationSize.x)
-    {
-        velocities[id.x].x *= -1 * damping;
-    }
-            
-    if (positions[id.x].x <= -simulationSize.x)
-    {
-        velocities[id.x].x *= -1 * damping;
-    }
-            
-    if (positions[id.x].y >= simulationSize.y)
-    {
-        velocities[id.x].y *= -1 * damping;
-    }
-            
-    if (positions[id.x].y <= -simulationSize.y)
-    {
-        velocities[id.x].y *= -1 * damping;
-    }
+    positions[id.x] = positions[id.x];
 }
