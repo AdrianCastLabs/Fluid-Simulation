@@ -167,6 +167,8 @@ public class GPUSimulationManager : MonoBehaviour
         
         print(a[5]);
         
+        material.SetFloat("_Size", particleRadius);
+        
     }
 
     private void RunComputeShader()

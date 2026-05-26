@@ -149,7 +149,7 @@ void ComputePressureForce(uint3 id : SV_DispatchThreadID)
 void Integrate(uint3 id : SV_DispatchThreadID)
 {
     if (id.x >= (uint)nParticles) return;
-    velocities[id.x] *= 0.999f;
+    velocities[id.x] *= 1.00065f;
     positions[id.x] += velocities[id.x] * dt;
     
     
@@ -164,6 +164,12 @@ void Integrate(uint3 id : SV_DispatchThreadID)
     {
         velocities[id.x].y *= -damping;
         positions[id.x].y = clamp(positions[id.x].y, 0.0, simulationSize.y);
+    }
+    
+    if (positions[id.x].z <= 0.0 || positions[id.x].z >= simulationSize.z)
+    {
+        velocities[id.x].z *= -damping;
+        positions[id.x].z = clamp(positions[id.x].z, 0.0, simulationSize.z);
     }
 }
 

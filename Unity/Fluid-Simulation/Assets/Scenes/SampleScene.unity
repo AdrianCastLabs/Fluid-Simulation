@@ -182,7 +182,7 @@ Camera:
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 5
+  orthographic size: 33
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -207,7 +207,7 @@ Transform:
   m_GameObject: {fileID: 330585543}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -10}
+  m_LocalPosition: {x: 20.9, y: 25, z: -54.4}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -613,16 +613,16 @@ MonoBehaviour:
   mesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
   pointMesh: {fileID: 0}
   material: {fileID: 2100000, guid: bd9aac97b208c684e8a20f1897743dc5, type: 2}
-  gravity: 0
-  nParticles: 2000
-  particleRadius: 0.36
-  simulationSize: {x: 20, y: 20, z: 0}
+  gravity: 1
+  nParticles: 10000
+  particleRadius: 0.3
+  simulationSize: {x: 80, y: 50, z: 0}
   smoothingRadius: 0.6
   mass: 1
   targetDensity: 1
-  pressureMultiplier: 10
-  dt: 0.02
-  viscosityStrength: 0.5
+  pressureMultiplier: 70
+  dt: 0.03
+  viscosityStrength: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

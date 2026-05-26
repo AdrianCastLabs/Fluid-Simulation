@@ -105,7 +105,7 @@ Shader "Custom/BillboardParticles"
                 if (dist > 1)
                     discard;
 
-                float t = (i.speed * 5 - _MinSpeed) / (_MaxSpeed - _MinSpeed);
+                float t = (i.speed * 1.2 - _MinSpeed) / (_MaxSpeed - _MinSpeed);
                 t = smoothstep(0.0, 1.0, t);
                 float3 col = Heatmap(t);
                 col *= lerp(0.6, 1.5, t);
